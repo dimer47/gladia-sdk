@@ -331,6 +331,8 @@ gladia-sdk/
 │   └── utils/
 │       └── polling.ts        # poll() avec backoff exponentiel
 ├── tests/                    # 91 tests unitaires (vitest)
+├── docs/
+│   └── openapi.yaml          # Spécification OpenAPI Gladia (source de vérité)
 ├── dist/                     # Build output (ESM + CJS + .d.ts)
 ├── package.json
 ├── tsconfig.json
