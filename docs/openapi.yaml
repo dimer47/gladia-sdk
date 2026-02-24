@@ -1,0 +1,2063 @@
+openapi: 3.1.0
+info:
+  title: Gladia API
+  description: |
+    API Gladia pour la transcription audio/vidéo en temps réel et pré-enregistrée.
+    Offre des fonctionnalités avancées : diarisation, traduction, résumé, analyse de sentiments, etc.
+
+    Limites :
+    - Taille maximale des fichiers : 1000 MB
+    - Durée maximale (standard) : 135 minutes (120 min pour YouTube)
+    - Durée maximale (enterprise) : 4h15
+    - Formats audio : AAC, AC3, EAC3, FLAC, M4A, MP2, MP3, OGG, Opus, WAV
+    - Formats vidéo : 3G2, 3GP, AVI, FLV, M4V, Matroska, MOV, MP4, WMV
+    - Plateformes en ligne : YouTube, TikTok, Instagram, Facebook, Vimeo, Dailymotion, LinkedIn, etc.
+  version: '2.0'
+  contact:
+    name: Gladia
+    url: https://docs.gladia.io
+servers:
+- url: https://api.gladia.io
+  description: Serveur de production Gladia
+security:
+- GladiaApiKey: []
+tags:
+- name: Upload
+  description: Upload de fichiers audio/vidéo
+- name: Pre-recorded
+  description: Transcription de fichiers pré-enregistrés
+- name: Live
+  description: Transcription en temps réel (live streaming)
+- name: Deprecated
+  description: Endpoints dépréciés - utiliser les endpoints /v2/pre-recorded et /v2/live à la place
+paths:
+  /v2/upload:
+    post:
+      tags: [Upload]
+      operationId: uploadAudioFile
+      summary: Upload un fichier audio ou vidéo
+      description: |
+        Upload un fichier audio ou vidéo vers Gladia.
+        Supporte l'envoi par fichier (multipart) ou par URL (JSON).
+        Retourne une URL Gladia utilisable pour la transcription.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [audio]
+              properties:
+                audio:
+                  type: string
+                  format: binary
+                  description: Fichier audio ou vidéo à uploader
+          application/json:
+            schema:
+              type: object
+              required: [audio_url]
+              properties:
+                audio_url:
+                  type: string
+                  format: uri
+                  description: URL du fichier audio ou vidéo à uploader
+      responses:
+        '200':
+          description: Fichier uploadé avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadResponse'
+        '400':
+          description: Requête invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        '401':
+          description: Non autorisé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+  /v2/pre-recorded:
+    post:
+      tags: [Pre-recorded]
+      operationId: createPreRecordedTranscription
+      summary: Lancer une transcription pré-enregistrée
+      description: |
+        Soumet un fichier audio/vidéo pour transcription asynchrone.
+        Retourne un ID de job et une URL pour récupérer les résultats.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreRecordedRequest'
+      responses:
+        '201':
+          description: Job de transcription créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreRecordedCreatedResponse'
+        '400':
+          description: Requête invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        '401':
+          description: Non autorisé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '422':
+          description: Entité non traitable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnprocessableEntityError'
+    get:
+      tags: [Pre-recorded]
+      operationId: listPreRecordedTranscriptions
+      summary: Lister les transcriptions pré-enregistrées
+      description: Liste paginée des jobs de transcription pré-enregistrés avec filtres optionnels.
+      parameters:
+      - $ref: '#/components/parameters/Offset'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Date'
+      - $ref: '#/components/parameters/BeforeDate'
+      - $ref: '#/components/parameters/AfterDate'
+      - $ref: '#/components/parameters/Status'
+      - $ref: '#/components/parameters/CustomMetadataFilter'
+      responses:
+        '200':
+          description: Liste des transcriptions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListPreRecordedResponse'
+        '401':
+          description: Non autorisé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+  /v2/pre-recorded/{id}:
+    get:
+      tags: [Pre-recorded]
+      operationId: getPreRecordedTranscription
+      summary: Récupérer une transcription pré-enregistrée
+      description: Récupère les métadonnées et résultats d'un job de transcription.
+      parameters:
+      - $ref: '#/components/parameters/JobId'
+      responses:
+        '200':
+          description: Métadonnées et résultat du job
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreRecordedResponse'
+        '401':
+          description: Non autorisé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '404':
+          description: Job non trouvé ou supprimé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+    delete:
+      tags: [Pre-recorded]
+      operationId: deletePreRecordedTranscription
+      summary: Supprimer une transcription pré-enregistrée
+      description: Supprime un job de transcription et ses données associées.
+      parameters:
+      - $ref: '#/components/parameters/JobId'
+      responses:
+        '202':
+          description: Job supprimé avec succès
+        '401':
+          description: Non autorisé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '403':
+          description: Job dans un état non supprimable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+        '404':
+          description: Job non trouvé ou déjà supprimé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+  /v2/pre-recorded/{id}/file:
+    get:
+      tags: [Pre-recorded]
+      operationId: getPreRecordedAudioFile
+      summary: Télécharger le fichier audio d'une transcription
+      description: Récupère le fichier audio/vidéo original associé au job de transcription.
+      parameters:
+      - $ref: '#/components/parameters/JobId'
+      responses:
+        '200':
+          description: Fichier audio binaire
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: Non autorisé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '404':
+          description: Job ou fichier non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+  /v2/live:
+    post:
+      tags: [Live]
+      operationId: initLiveTranscription
+      summary: Initialiser une session de transcription live
+      description: |
+        Crée une session de transcription en temps réel.
+        Retourne une URL WebSocket sécurisée pour envoyer des chunks audio.
+      parameters:
+      - name: region
+        in: query
+        required: false
+        description: Région de traitement
+        schema:
+          type: string
+          enum: [us-west, eu-west]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LiveRequest'
+      responses:
+        '201':
+          description: Session live créée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveCreatedResponse'
+        '400':
+          description: Requête invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        '401':
+          description: Non autorisé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '422':
+          description: Entité non traitable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnprocessableEntityError'
+    get:
+      tags: [Live]
+      operationId: listLiveTranscriptions
+      summary: Lister les sessions de transcription live
+      description: Liste paginée des sessions live avec filtres optionnels.
+      parameters:
+      - $ref: '#/components/parameters/Offset'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Date'
+      - $ref: '#/components/parameters/BeforeDate'
+      - $ref: '#/components/parameters/AfterDate'
+      - $ref: '#/components/parameters/Status'
+      - $ref: '#/components/parameters/CustomMetadataFilter'
+      responses:
+        '200':
+          description: Liste des sessions live
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListLiveResponse'
+        '401':
+          description: Non autorisé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+  /v2/live/{id}:
+    get:
+      tags: [Live]
+      operationId: getLiveTranscription
+      summary: Récupérer une session de transcription live
+      description: Récupère les métadonnées et résultats d'une session live.
+      parameters:
+      - $ref: '#/components/parameters/JobId'
+      responses:
+        '200':
+          description: Métadonnées et résultat de la session live
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveResponse'
+        '401':
+          description: Non autorisé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '404':
+          description: Session non trouvée ou supprimée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+    delete:
+      tags: [Live]
+      operationId: deleteLiveTranscription
+      summary: Supprimer une session de transcription live
+      description: Supprime une session live et ses données associées.
+      parameters:
+      - $ref: '#/components/parameters/JobId'
+      responses:
+        '202':
+          description: Session supprimée avec succès
+        '401':
+          description: Non autorisé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '403':
+          description: Session dans un état non supprimable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+        '404':
+          description: Session non trouvée ou déjà supprimée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+  /v2/live/{id}/file:
+    get:
+      tags: [Live]
+      operationId: getLiveAudioFile
+      summary: Télécharger le fichier audio d'une session live
+      description: Récupère l'enregistrement audio de la session live.
+      parameters:
+      - $ref: '#/components/parameters/JobId'
+      responses:
+        '200':
+          description: Fichier audio binaire
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: Non autorisé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '404':
+          description: Session ou fichier non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+  /v2/transcription:
+    post:
+      tags: [Deprecated]
+      operationId: createTranscriptionDeprecated
+      summary: '[Déprécié] Lancer une transcription'
+      description: |
+        Déprécié : utiliser POST /v2/pre-recorded à la place.
+        Soumet un fichier audio/vidéo pour transcription asynchrone.
+      deprecated: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreRecordedRequest'
+      responses:
+        '201':
+          description: Job de transcription créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreRecordedCreatedResponse'
+        '400':
+          description: Requête invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        '401':
+          description: Non autorisé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '422':
+          description: Entité non traitable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnprocessableEntityError'
+    get:
+      tags: [Deprecated]
+      operationId: listTranscriptionsDeprecated
+      summary: '[Déprécié] Lister les transcriptions'
+      description: |
+        Déprécié : utiliser GET /v2/pre-recorded à la place.
+      deprecated: true
+      parameters:
+      - $ref: '#/components/parameters/Offset'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Date'
+      - $ref: '#/components/parameters/BeforeDate'
+      - $ref: '#/components/parameters/AfterDate'
+      - $ref: '#/components/parameters/Status'
+      - $ref: '#/components/parameters/CustomMetadataFilter'
+      responses:
+        '200':
+          description: Liste des transcriptions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListPreRecordedResponse'
+        '401':
+          description: Non autorisé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+  /v2/transcription/{id}:
+    get:
+      tags: [Deprecated]
+      operationId: getTranscriptionDeprecated
+      summary: '[Déprécié] Récupérer une transcription'
+      description: |
+        Déprécié : utiliser GET /v2/pre-recorded/{id} à la place.
+        Gère les jobs pré-enregistrés et live via le discriminateur kind.
+      deprecated: true
+      parameters:
+      - $ref: '#/components/parameters/JobId'
+      responses:
+        '200':
+          description: Métadonnées et résultat du job
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreRecordedResponse'
+        '401':
+          description: Non autorisé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '404':
+          description: Job non trouvé ou supprimé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+    delete:
+      tags: [Deprecated]
+      operationId: deleteTranscriptionDeprecated
+      summary: '[Déprécié] Supprimer une transcription'
+      description: |
+        Déprécié : utiliser DELETE /v2/pre-recorded/{id} à la place.
+      deprecated: true
+      parameters:
+      - $ref: '#/components/parameters/JobId'
+      responses:
+        '202':
+          description: Job supprimé avec succès
+        '401':
+          description: Non autorisé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '403':
+          description: Job dans un état non supprimable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+        '404':
+          description: Job non trouvé ou déjà supprimé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+  /v2/transcription/{id}/file:
+    get:
+      tags: [Deprecated]
+      operationId: getTranscriptionAudioFileDeprecated
+      summary: '[Déprécié] Télécharger le fichier audio d''une transcription'
+      description: |
+        Déprécié : utiliser GET /v2/pre-recorded/{id}/file à la place.
+      deprecated: true
+      parameters:
+      - $ref: '#/components/parameters/JobId'
+      responses:
+        '200':
+          description: Fichier audio binaire
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: Non autorisé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '404':
+          description: Job ou fichier non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+components:
+  securitySchemes:
+    GladiaApiKey:
+      type: apiKey
+      in: header
+      name: x-gladia-key
+      description: Clé API Gladia (obtenue sur app.gladia.io)
+  parameters:
+    JobId:
+      name: id
+      in: path
+      required: true
+      description: Identifiant UUID du job
+      schema:
+        type: string
+        format: uuid
+        example: 45463597-20b7-4af7-b3b3-f5fb778203ab
+    Offset:
+      name: offset
+      in: query
+      required: false
+      description: Point de départ pour la pagination (0 = premier élément)
+      schema:
+        type: integer
+        default: 0
+        minimum: 0
+    Limit:
+      name: limit
+      in: query
+      required: false
+      description: Nombre maximum d'éléments retournés
+      schema:
+        type: integer
+        default: 20
+        minimum: 1
+    Date:
+      name: date
+      in: query
+      required: false
+      description: Filtrer par date spécifique (format ISO YYYY-MM-DD)
+      schema:
+        type: string
+        format: date-time
+    BeforeDate:
+      name: before_date
+      in: query
+      required: false
+      description: Filtrer les éléments avant cette date (format ISO)
+      schema:
+        type: string
+        format: date-time
+    AfterDate:
+      name: after_date
+      in: query
+      required: false
+      description: Filtrer les éléments après cette date (format ISO)
+      schema:
+        type: string
+        format: date-time
+    Status:
+      name: status
+      in: query
+      required: false
+      description: Filtrer par statut
+      schema:
+        type: array
+        items:
+          type: string
+          enum:
+          - queued
+          - processing
+          - done
+          - error
+    CustomMetadataFilter:
+      name: custom_metadata
+      in: query
+      required: false
+      description: Filtrer par métadonnées personnalisées (paires clé-valeur)
+      schema:
+        type: object
+        additionalProperties: true
+  schemas:
+    UploadResponse:
+      type: object
+      required: [audio_url, audio_metadata]
+      properties:
+        audio_url:
+          type: string
+          format: uri
+          description: URL Gladia du fichier uploadé (utilisable dans audio_url de transcription)
+          example: https://api.gladia.io/file/6c09400e-23d2-4bd2-be55-96a5ececfa3b
+        audio_metadata:
+          $ref: '#/components/schemas/AudioMetadata'
+    AudioMetadata:
+      type: object
+      required:
+      - id
+      - filename
+      - source
+      - extension
+      - size
+      - audio_duration
+      - number_of_channels
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Identifiant unique du fichier
+        filename:
+          type: string
+          description: Nom du fichier original
+        source:
+          type: string
+          format: uri
+          description: Source du fichier
+        extension:
+          type: string
+          description: Extension du fichier (mp3, wav, etc.)
+        size:
+          type: integer
+          description: Taille du fichier en octets
+        audio_duration:
+          type: number
+          description: Durée audio en secondes
+        number_of_channels:
+          type: integer
+          description: Nombre de canaux audio
+    PreRecordedRequest:
+      type: object
+      required: [audio_url]
+      properties:
+        audio_url:
+          type: string
+          format: uri
+          description: URL vers un fichier Gladia ou un fichier audio/vidéo externe
+        language_config:
+          $ref: '#/components/schemas/LanguageConfig'
+        language:
+          type: string
+          deprecated: true
+          description: '[Déprécié] Code langue ISO 639. Utiliser language_config à la place'
+        detect_language:
+          type: boolean
+          deprecated: true
+          default: true
+          description: '[Déprécié] Détecter automatiquement la langue'
+        enable_code_switching:
+          type: boolean
+          deprecated: true
+          default: false
+          description: '[Déprécié] Utiliser language_config.code_switching à la place'
+        code_switching_config:
+          type: object
+          deprecated: true
+          description: '[Déprécié] Utiliser language_config à la place'
+          properties:
+            languages:
+              type: array
+              items:
+                type: string
+              default: []
+        custom_vocabulary:
+          type: boolean
+          default: false
+          description: '[Beta] Activer l''amélioration du vocabulaire'
+        custom_vocabulary_config:
+          $ref: '#/components/schemas/CustomVocabularyConfig'
+        sentences:
+          type: boolean
+          default: false
+          description: Activer le parsing par phrases
+        punctuation_enhanced:
+          type: boolean
+          default: false
+          description: '[Alpha] Mode de ponctuation amélioré'
+        diarization:
+          type: boolean
+          default: false
+          description: Activer l'identification des locuteurs
+        diarization_config:
+          $ref: '#/components/schemas/DiarizationConfig'
+        subtitles:
+          type: boolean
+          default: false
+          description: Générer des sous-titres
+        subtitles_config:
+          $ref: '#/components/schemas/SubtitlesConfig'
+        translation:
+          type: boolean
+          default: false
+          description: '[Beta] Activer la traduction'
+        translation_config:
+          $ref: '#/components/schemas/TranslationConfig'
+        summarization:
+          type: boolean
+          default: false
+          description: '[Beta] Activer le résumé'
+        summarization_config:
+          $ref: '#/components/schemas/SummarizationConfig'
+        sentiment_analysis:
+          type: boolean
+          default: false
+          description: Activer l'analyse de sentiments
+        moderation:
+          type: boolean
+          default: false
+          description: '[Alpha] Activer la modération de contenu'
+        named_entity_recognition:
+          type: boolean
+          default: false
+          description: '[Alpha] Activer la reconnaissance d''entités nommées'
+        chapterization:
+          type: boolean
+          default: false
+          description: '[Alpha] Activer le chapitrage automatique'
+        name_consistency:
+          type: boolean
+          default: false
+          description: '[Alpha] Activer la cohérence des noms'
+        custom_spelling:
+          type: boolean
+          default: false
+          description: '[Alpha] Activer l''orthographe personnalisée'
+        custom_spelling_config:
+          $ref: '#/components/schemas/CustomSpellingConfig'
+        structured_data_extraction:
+          type: boolean
+          default: false
+          description: '[Alpha] Activer l''extraction de données structurées'
+        structured_data_extraction_config:
+          $ref: '#/components/schemas/StructuredDataExtractionConfig'
+        audio_to_llm:
+          type: boolean
+          default: false
+          description: '[Alpha] Activer le traitement audio vers LLM'
+        audio_to_llm_config:
+          $ref: '#/components/schemas/AudioToLlmConfig'
+        display_mode:
+          type: boolean
+          default: false
+          description: '[Alpha] Activer le mode d''affichage'
+        pii_redaction:
+          type: boolean
+          default: false
+          description: Activer la détection et la rédaction des données personnelles (PII) dans la transcription
+        pii_redaction_config:
+          $ref: '#/components/schemas/PiiRedactionConfig'
+        callback:
+          type: boolean
+          default: false
+          description: Activer les notifications par callback
+        callback_config:
+          $ref: '#/components/schemas/CallbackConfig'
+        callback_url:
+          type: string
+          format: uri
+          deprecated: true
+          description: '[Déprécié] Utiliser callback_config.url à la place'
+        custom_metadata:
+          type: object
+          additionalProperties: true
+          description: Métadonnées personnalisées (paires clé-valeur)
+          example:
+            user: John Doe
+        context_prompt:
+          type: string
+          deprecated: true
+          description: '[Déprécié] Prompt de contexte'
+    PreRecordedCreatedResponse:
+      type: object
+      required: [id, result_url]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Identifiant du job de transcription
+          example: 45463597-20b7-4af7-b3b3-f5fb778203ab
+        result_url:
+          type: string
+          format: uri
+          description: URL pré-construite pour récupérer les résultats
+    PreRecordedResponse:
+      type: object
+      required:
+      - id
+      - request_id
+      - version
+      - status
+      - created_at
+      - post_session_metadata
+      - kind
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Identifiant du job
+        request_id:
+          type: string
+          description: Identifiant de debug
+          example: G-821fe9df
+        version:
+          type: integer
+          description: Version de l'API
+        status:
+          type: string
+          enum:
+          - queued
+          - processing
+          - done
+          - error
+          description: Statut du job
+        created_at:
+          type: string
+          format: date-time
+          description: Date de création
+          example: '2023-12-28T09:04:17.210Z'
+        completed_at:
+          type: [string, 'null']
+          format: date-time
+          description: Date de complétion
+        custom_metadata:
+          type: object
+          additionalProperties: true
+          description: Métadonnées personnalisées
+        error_code:
+          type: [integer, 'null']
+          minimum: 400
+          maximum: 599
+          description: Code d'erreur HTTP si échoué
+        post_session_metadata:
+          type: object
+          additionalProperties: true
+          description: Données de debug
+        kind:
+          type: string
+          enum: [pre-recorded]
+          description: Type de job
+        file:
+          $ref: '#/components/schemas/FileResponse'
+        request_params:
+          type: [object, 'null']
+          additionalProperties: true
+          description: Paramètres de la requête originale
+        result:
+          $ref: '#/components/schemas/TranscriptionResult'
+    ListPreRecordedResponse:
+      type: object
+      required: [first, current, items]
+      properties:
+        first:
+          type: string
+          format: uri
+          description: URL de la première page
+        current:
+          type: string
+          format: uri
+          description: URL de la page courante
+        next:
+          type: [string, 'null']
+          format: uri
+          description: URL de la page suivante
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PreRecordedResponse'
+    LiveRequest:
+      type: object
+      properties:
+        encoding:
+          type: string
+          default: wav/pcm
+          enum: [wav/pcm, wav/alaw, wav/ulaw]
+          description: Format d'encodage audio. Pas besoin d'ajouter de headers WAV au raw audio.
+        bit_depth:
+          type: number
+          default: 16
+          enum:
+          - 8
+          - 16
+          - 24
+          - 32
+          description: Profondeur de bits du flux audio
+        sample_rate:
+          type: number
+          default: 16000
+          enum:
+          - 8000
+          - 16000
+          - 32000
+          - 44100
+          - 48000
+          description: Fréquence d'échantillonnage en Hz
+        channels:
+          type: integer
+          default: 1
+          minimum: 1
+          maximum: 8
+          description: Nombre de canaux audio
+        model:
+          type: string
+          default: solaria-1
+          enum: [solaria-1]
+          description: Modèle de transcription
+        endpointing:
+          type: number
+          default: 0.05
+          minimum: 0.01
+          maximum: 10
+          description: Durée de silence (secondes) déclenchant la fin d'un énoncé
+        maximum_duration_without_endpointing:
+          type: number
+          default: 5
+          minimum: 5
+          maximum: 60
+          description: Durée maximale (secondes) sans endpointing avant complétion forcée de l'énoncé
+        language_config:
+          $ref: '#/components/schemas/LanguageConfig'
+        pre_processing:
+          $ref: '#/components/schemas/PreProcessingConfig'
+        realtime_processing:
+          $ref: '#/components/schemas/RealtimeProcessingConfig'
+        post_processing:
+          $ref: '#/components/schemas/PostProcessingConfig'
+        messages_config:
+          $ref: '#/components/schemas/MessagesConfig'
+        callback:
+          type: boolean
+          default: false
+          description: Envoyer les messages à l'URL de callback configurée
+        callback_config:
+          $ref: '#/components/schemas/LiveCallbackConfig'
+        custom_metadata:
+          type: object
+          additionalProperties: true
+          description: Métadonnées personnalisées
+          example:
+            user: John Doe
+    LiveCreatedResponse:
+      type: object
+      required: [id, created_at, url]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Identifiant de la session live
+          example: 45463597-20b7-4af7-b3b3-f5fb778203ab
+        created_at:
+          type: string
+          format: date-time
+          description: Date de création
+          example: '2023-12-28T09:04:17.210Z'
+        url:
+          type: string
+          format: uri
+          description: URL WebSocket sécurisée pour envoyer les chunks audio (contient un token temporaire)
+          example: wss://api.gladia.io/v2/live?token=4a39145c-2844-4557-8f34-34883f7be7d9
+    LiveResponse:
+      type: object
+      required:
+      - id
+      - request_id
+      - version
+      - status
+      - created_at
+      - post_session_metadata
+      - kind
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Identifiant de la session
+        request_id:
+          type: string
+          description: Identifiant de debug
+        version:
+          type: integer
+          description: Version de l'API
+        status:
+          type: string
+          enum:
+          - queued
+          - processing
+          - done
+          - error
+          description: Statut de la session
+        created_at:
+          type: string
+          format: date-time
+          description: Date de création
+        completed_at:
+          type: [string, 'null']
+          format: date-time
+          description: Date de complétion
+        custom_metadata:
+          type: object
+          additionalProperties: true
+        error_code:
+          type: [integer, 'null']
+          minimum: 400
+          maximum: 599
+        post_session_metadata:
+          type: object
+          additionalProperties: true
+        kind:
+          type: string
+          enum: [live]
+          default: live
+        file:
+          $ref: '#/components/schemas/FileResponse'
+        request_params:
+          $ref: '#/components/schemas/LiveRequestParams'
+        result:
+          $ref: '#/components/schemas/LiveTranscriptionResult'
+    LiveRequestParams:
+      type: [object, 'null']
+      description: Paramètres de configuration utilisés pour la session live
+      properties:
+        encoding:
+          type: string
+          enum: [wav/pcm, wav/alaw, wav/ulaw]
+          default: wav/pcm
+        bit_depth:
+          type: number
+          enum:
+          - 8
+          - 16
+          - 24
+          - 32
+          default: 16
+        sample_rate:
+          type: number
+          enum:
+          - 8000
+          - 16000
+          - 32000
+          - 44100
+          - 48000
+          default: 16000
+        channels:
+          type: integer
+          default: 1
+          minimum: 1
+          maximum: 8
+        model:
+          type: string
+          enum: [solaria-1]
+          default: solaria-1
+        endpointing:
+          type: number
+          default: 0.05
+          minimum: 0.01
+          maximum: 10
+        maximum_duration_without_endpointing:
+          type: number
+          default: 5
+          minimum: 5
+          maximum: 60
+        language_config:
+          $ref: '#/components/schemas/LanguageConfig'
+        pre_processing:
+          $ref: '#/components/schemas/PreProcessingConfig'
+        realtime_processing:
+          $ref: '#/components/schemas/RealtimeProcessingConfig'
+        post_processing:
+          $ref: '#/components/schemas/PostProcessingConfig'
+        messages_config:
+          $ref: '#/components/schemas/MessagesConfig'
+        callback:
+          type: boolean
+          default: false
+        callback_config:
+          $ref: '#/components/schemas/LiveCallbackConfig'
+    ListLiveResponse:
+      type: object
+      required: [first, current, items]
+      properties:
+        first:
+          type: string
+          format: uri
+        current:
+          type: string
+          format: uri
+        next:
+          type: [string, 'null']
+          format: uri
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LiveResponse'
+    FileResponse:
+      type: [object, 'null']
+      properties:
+        id:
+          type: string
+          description: Identifiant du fichier
+        filename:
+          type: [string, 'null']
+          description: Nom du fichier original
+        source:
+          type: [string, 'null']
+          description: Lien de téléchargement (si audio_url utilisé)
+        audio_duration:
+          type: [number, 'null']
+          description: Durée audio en secondes
+        number_of_channels:
+          type: [integer, 'null']
+          minimum: 1
+          description: Nombre de canaux
+    LanguageConfig:
+      type: object
+      properties:
+        languages:
+          type: array
+          items:
+            type: string
+            description: Code langue ISO 639-1
+          default: []
+          description: |
+            Codes ISO 639-1 des langues. Si vide, auto-détection activée.
+            Langues supportées : af, am, ar, as, az, ba, be, bg, bn, bo, br, bs, ca, cs, cy, da, de, el, en, es, et, eu, fa, fi, fo, fr, gl, gu, ha, haw, he, hi, hr, ht, hu, hy, id, is, it, ja, jw, ka, kk, km, kn, ko, la, lb, ln, lo, lt, lv, mg, mi, mk, ml, mn, mr, ms, mt, my, ne, nl, nn, no, oc, pa, pl, ps, pt, ro, ru, sa, sd, si, sk, sl, sn, so, sq, sr, su, sv, sw, ta, te, tg, th, tk, tl, tr, tt, uk, ur, uz, vi, yi, yo, zh
+          example: [fr, en]
+        code_switching:
+          type: boolean
+          default: false
+          description: Auto-détection de langue par énoncé. Ignoré si une langue spécifique est définie.
+    CustomVocabularyConfig:
+      type: object
+      properties:
+        vocabulary:
+          type: array
+          items:
+            oneOf:
+            - type: string
+              description: Mot ou terme personnalisé (forme simple)
+            - $ref: '#/components/schemas/CustomVocabularyEntry'
+          description: Liste de vocabulaire alimentant le modèle
+          example:
+          - Westeros
+          - value: Stark
+          - value: Night's Watch
+            pronunciations: [Nightz Watch]
+            intensity: 0.4
+            language: en
+        default_intensity:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Intensité par défaut du vocabulaire personnalisé
+          example: 0.5
+    CustomVocabularyEntry:
+      type: object
+      required: [value]
+      properties:
+        value:
+          type: string
+          description: Texte utilisé pour remplacer dans la transcription
+          example: Gladia
+        intensity:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Intensité de la fonctionnalité (0 = faible, 1 = fort)
+          example: 0.5
+        pronunciations:
+          type: array
+          items:
+            type: string
+          description: Prononciations utilisées pour la comparaison
+        language:
+          type: string
+          description: Code langue ISO 639-1 pour la comparaison de prononciation (défaut = langue de transcription)
+          example: en
+    DiarizationConfig:
+      type: object
+      properties:
+        number_of_speakers:
+          type: integer
+          minimum: 1
+          description: Nombre exact de locuteurs attendus
+        min_speakers:
+          type: integer
+          minimum: 0
+          description: Nombre minimum de locuteurs
+        max_speakers:
+          type: integer
+          minimum: 0
+          description: Nombre maximum de locuteurs
+    SubtitlesConfig:
+      type: object
+      properties:
+        formats:
+          type: array
+          items:
+            type: string
+            enum: [srt, vtt]
+          default: [srt]
+          minItems: 1
+          description: Formats de sous-titres à générer
+        minimum_duration:
+          type: number
+          minimum: 0
+          description: Durée minimum d'un sous-titre (secondes)
+        maximum_duration:
+          type: number
+          minimum: 1
+          maximum: 30
+          description: Durée maximum d'un sous-titre (secondes)
+        maximum_characters_per_row:
+          type: integer
+          minimum: 1
+          description: Nombre maximum de caractères par ligne
+        maximum_rows_per_caption:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: Nombre maximum de lignes par caption
+        style:
+          type: string
+          enum: [default, compliance]
+          default: default
+          description: Style des sous-titres
+    TranslationConfig:
+      type: object
+      required: [target_languages]
+      properties:
+        target_languages:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          description: |
+            Codes ISO 639-1 des langues cibles.
+            Langues supportées : af, am, ar, as, az, ba, be, bg, bn, bo, br, bs, ca, cs, cy, da, de, el, en, es, et, eu, fa, fi, fo, fr, gl, gu, ha, haw, he, hi, hr, ht, hu, hy, id, is, it, ja, jw, ka, kk, km, kn, ko, la, lb, ln, lo, lt, lv, mg, mi, mk, ml, mn, mr, ms, mt, my, ne, nl, nn, no, oc, pa, pl, ps, pt, ro, ru, sa, sd, si, sk, sl, sn, so, sq, sr, su, sv, sw, ta, te, tg, th, tk, tl, tr, tt, uk, ur, uz, vi, wo, yi, yo, zh
+          example: [en]
+        model:
+          type: string
+          enum: [base, enhanced]
+          default: base
+          description: Modèle de traduction
+        match_original_utterances:
+          type: boolean
+          default: true
+          description: Aligner les traductions avec les énoncés originaux
+        lipsync:
+          type: boolean
+          default: true
+          description: Appliquer la synchronisation labiale
+        context_adaptation:
+          type: boolean
+          default: true
+          description: Adaptation contextuelle de la traduction
+        informal:
+          type: boolean
+          default: false
+          description: Forcer le registre informel dans la langue cible
+        context:
+          type: string
+          description: Contexte optionnel pour améliorer la précision de la traduction
+    SummarizationConfig:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [general, bullet_points, concise]
+          default: general
+          description: Type de résumé
+    CustomSpellingConfig:
+      type: object
+      required: [spelling_dictionary]
+      properties:
+        spelling_dictionary:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          description: Dictionnaire de mapping d'orthographe (clé = correction, valeur = liste de variantes)
+          example:
+            Gettleman: [gettleman]
+            SQL: [Sequel]
+    StructuredDataExtractionConfig:
+      type: object
+      required: [classes]
+      properties:
+        classes:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          description: Classes de données à extraire
+    AudioToLlmConfig:
+      type: object
+      required: [prompts]
+      properties:
+        prompts:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          description: Prompts pour le traitement LLM
+    PiiRedactionConfig:
+      type: object
+      properties:
+        entity_types:
+          type: array
+          items:
+            type: string
+          description: |
+            Types d'entités à détecter. Peut être des presets réglementaires ou des types individuels.
+            Presets : GDPR, HIPAA_SAFE_HARBOR, CPRA, LAW_25, APPI
+            Types individuels : ACCOUNT_NUMBER, AGE, DATE, DATE_INTERVAL, DOB, DRIVER_LICENSE, DURATION,
+            EMAIL_ADDRESS, EVENT, FILENAME, GENDER_SEXUALITY, HEALTHCARE_NUMBER, IP_ADDRESS, LANGUAGE,
+            LOCATION, LOCATION_ADDRESS, LOCATION_CITY, LOCATION_COORDINATE, LOCATION_COUNTRY, LOCATION_STATE,
+            LOCATION_ZIP, MARITAL_STATUS, MONEY, NAME, NAME_FAMILY, NAME_GIVEN, NAME_MEDICAL_PROFESSIONAL,
+            NUMERICAL_PII, OCCUPATION, ORGANIZATION, ORGANIZATION_MEDICAL_FACILITY, ORIGIN, PASSPORT_NUMBER,
+            PASSWORD, PHONE_NUMBER, PHYSICAL_ATTRIBUTE, POLITICAL_AFFILIATION, RELIGION, SSN, TIME, URL,
+            USERNAME, VEHICLE_ID, ZODIAC_SIGN, BLOOD_TYPE, CONDITION, DOSE, DRUG, INJURY, MEDICAL_PROCESS,
+            STATISTICS, MEDICAL_CODE, BANK_ACCOUNT, CREDIT_CARD, CREDIT_CARD_EXPIRATION, CVV, ROUTING_NUMBER,
+            CORPORATE_ACTION, FINANCIAL_METRIC, PRODUCT, TREND
+          example: [GDPR]
+        processed_text_type:
+          type: string
+          enum: [MASK, MARKER]
+          default: MARKER
+          description: |
+            Mode de remplacement des données sensibles :
+            - MASK : remplacement par des caractères (#### #####)
+            - MARKER : remplacement par des placeholders nommés ([NAME_1], [EMAIL_1])
+    CallbackConfig:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+          format: uri
+          description: URL de callback
+        method:
+          type: string
+          enum: [POST, PUT]
+          default: POST
+          description: Méthode HTTP pour le callback
+    PreProcessingConfig:
+      type: object
+      properties:
+        audio_enhancer:
+          type: boolean
+          default: false
+          description: Appliquer un pré-traitement pour améliorer la qualité audio
+        speech_threshold:
+          type: number
+          default: 0.6
+          minimum: 0
+          maximum: 1
+          description: Sensibilité de détection de la parole (1 = seuil strict, réduit les faux positifs)
+    RealtimeProcessingConfig:
+      type: object
+      properties:
+        custom_vocabulary:
+          type: boolean
+          default: false
+          description: Activer le vocabulaire personnalisé
+        custom_vocabulary_config:
+          $ref: '#/components/schemas/CustomVocabularyConfig'
+        custom_spelling:
+          type: boolean
+          default: false
+          description: Activer l'orthographe personnalisée
+        custom_spelling_config:
+          $ref: '#/components/schemas/CustomSpellingConfig'
+        translation:
+          type: boolean
+          default: false
+          description: Activer la traduction
+        translation_config:
+          $ref: '#/components/schemas/TranslationConfig'
+        named_entity_recognition:
+          type: boolean
+          default: false
+          description: Activer la reconnaissance d'entités nommées
+        sentiment_analysis:
+          type: boolean
+          default: false
+          description: Activer l'analyse de sentiments
+    PostProcessingConfig:
+      type: object
+      properties:
+        summarization:
+          type: boolean
+          default: false
+          description: Générer un résumé de la transcription complète
+        summarization_config:
+          $ref: '#/components/schemas/SummarizationConfig'
+        chapterization:
+          type: boolean
+          default: false
+          description: Générer des chapitres pour la transcription complète
+    MessagesConfig:
+      type: object
+      properties:
+        receive_partial_transcripts:
+          type: boolean
+          default: false
+          description: Recevoir les transcriptions partielles via WebSocket
+        receive_final_transcripts:
+          type: boolean
+          default: true
+          description: Recevoir les transcriptions finales via WebSocket
+        receive_speech_events:
+          type: boolean
+          default: true
+          description: Recevoir les événements de parole (début/fin)
+        receive_pre_processing_events:
+          type: boolean
+          default: true
+          description: Recevoir les événements de pré-traitement
+        receive_realtime_processing_events:
+          type: boolean
+          default: true
+          description: Recevoir les événements de traitement temps réel
+        receive_post_processing_events:
+          type: boolean
+          default: true
+          description: Recevoir les événements de post-traitement
+        receive_acknowledgments:
+          type: boolean
+          default: true
+          description: Recevoir les accusés de réception
+        receive_errors:
+          type: boolean
+          default: true
+          description: Recevoir les erreurs
+        receive_lifecycle_events:
+          type: boolean
+          default: false
+          description: Recevoir les événements de cycle de vie
+    LiveCallbackConfig:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+          format: uri
+          description: URL endpoint recevant les messages par POST
+          example: https://callback.example
+        receive_partial_transcripts:
+          type: boolean
+          default: false
+        receive_final_transcripts:
+          type: boolean
+          default: true
+        receive_speech_events:
+          type: boolean
+          default: false
+        receive_pre_processing_events:
+          type: boolean
+          default: true
+        receive_realtime_processing_events:
+          type: boolean
+          default: true
+        receive_post_processing_events:
+          type: boolean
+          default: true
+        receive_acknowledgments:
+          type: boolean
+          default: false
+        receive_errors:
+          type: boolean
+          default: false
+        receive_lifecycle_events:
+          type: boolean
+          default: true
+    TranscriptionResult:
+      type: [object, 'null']
+      description: Résultat de transcription (présent quand status=done)
+      properties:
+        metadata:
+          $ref: '#/components/schemas/TranscriptionMetadata'
+        transcription:
+          $ref: '#/components/schemas/TranscriptionDTO'
+        translation:
+          $ref: '#/components/schemas/AddonTranslationDTO'
+        summarization:
+          $ref: '#/components/schemas/AddonSummarizationDTO'
+        moderation:
+          $ref: '#/components/schemas/AddonGenericDTO'
+        named_entity_recognition:
+          $ref: '#/components/schemas/AddonNerDTO'
+        sentiment_analysis:
+          $ref: '#/components/schemas/AddonSentimentAnalysisDTO'
+        chapterization:
+          $ref: '#/components/schemas/AddonChapterizationDTO'
+        diarization:
+          $ref: '#/components/schemas/AddonGenericDTO'
+        name_consistency:
+          $ref: '#/components/schemas/AddonGenericDTO'
+        speaker_reidentification:
+          $ref: '#/components/schemas/AddonGenericDTO'
+        structured_data_extraction:
+          $ref: '#/components/schemas/AddonGenericDTO'
+        audio_to_llm:
+          $ref: '#/components/schemas/AddonAudioToLlmDTO'
+        sentences:
+          $ref: '#/components/schemas/AddonGenericDTO'
+          deprecated: true
+        display_mode:
+          $ref: '#/components/schemas/AddonGenericDTO'
+    LiveTranscriptionResult:
+      type: [object, 'null']
+      description: Résultat de transcription live (présent quand status=done)
+      properties:
+        metadata:
+          $ref: '#/components/schemas/TranscriptionMetadata'
+        transcription:
+          $ref: '#/components/schemas/TranscriptionDTO'
+        translation:
+          $ref: '#/components/schemas/AddonTranslationDTO'
+        summarization:
+          $ref: '#/components/schemas/AddonSummarizationDTO'
+        named_entity_recognition:
+          $ref: '#/components/schemas/AddonNerDTO'
+        sentiment_analysis:
+          $ref: '#/components/schemas/AddonSentimentAnalysisDTO'
+        chapterization:
+          $ref: '#/components/schemas/AddonChapterizationDTO'
+        messages:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+          description: Messages bruts de la session WebSocket
+    TranscriptionMetadata:
+      type: object
+      required:
+      - audio_duration
+      - number_of_distinct_channels
+      - billing_time
+      - transcription_time
+      properties:
+        audio_duration:
+          type: number
+          description: Durée audio en secondes
+        number_of_distinct_channels:
+          type: integer
+          minimum: 1
+          description: Nombre de canaux distincts
+        billing_time:
+          type: number
+          description: Durée facturée en secondes
+        transcription_time:
+          type: number
+          description: Temps de traitement en secondes
+    TranscriptionDTO:
+      type: object
+      required: [full_transcript, languages, utterances]
+      properties:
+        full_transcript:
+          type: string
+          description: Transcription complète en texte brut
+        languages:
+          type: array
+          items:
+            type: string
+          description: Langues détectées (triées par fréquence)
+        utterances:
+          type: array
+          items:
+            $ref: '#/components/schemas/Utterance'
+          description: Liste des énoncés avec timestamps
+        sentences:
+          type: [array, 'null']
+          items:
+            type: object
+            additionalProperties: true
+          description: Résultats du parsing par phrases (si activé)
+        subtitles:
+          type: [array, 'null']
+          items:
+            $ref: '#/components/schemas/SubtitleFile'
+          description: Fichiers de sous-titres générés (si activé)
+    Utterance:
+      type: object
+      required:
+      - start
+      - end
+      - confidence
+      - channel
+      - words
+      - text
+      - language
+      properties:
+        start:
+          type: number
+          description: Timestamp de début (secondes)
+        end:
+          type: number
+          description: Timestamp de fin (secondes)
+        confidence:
+          type: number
+          description: Score de confiance (0-1)
+        channel:
+          type: integer
+          minimum: 0
+          description: Canal audio source
+        speaker:
+          type: [integer, 'null']
+          minimum: 0
+          description: Identifiant du locuteur (si diarisation activée)
+        words:
+          type: array
+          items:
+            $ref: '#/components/schemas/Word'
+          description: Timestamps et confiance au niveau mot
+        text:
+          type: string
+          description: Texte transcrit
+        language:
+          type: string
+          description: Code langue ISO 639-1
+    Word:
+      type: object
+      required:
+      - word
+      - start
+      - end
+      - confidence
+      properties:
+        word:
+          type: string
+          description: Le mot transcrit
+        start:
+          type: number
+          description: Timestamp de début (secondes)
+        end:
+          type: number
+          description: Timestamp de fin (secondes)
+        confidence:
+          type: number
+          description: Score de confiance du mot (0-1)
+    SubtitleFile:
+      type: object
+      required: [format, subtitles]
+      properties:
+        format:
+          type: string
+          enum: [srt, vtt]
+          description: Format du fichier de sous-titres
+        subtitles:
+          type: string
+          description: Contenu du fichier de sous-titres
+    AddonError:
+      type: object
+      required: [status_code, exception, message]
+      properties:
+        status_code:
+          type: integer
+          description: Code d'erreur de l'addon
+        exception:
+          type: string
+          description: Type d'exception
+        message:
+          type: string
+          description: Message d'erreur
+    AddonGenericDTO:
+      type: [object, 'null']
+      description: Résultat générique d'un addon (structure commune success/is_empty/exec_time/error/results)
+      required: [success, is_empty, exec_time]
+      properties:
+        success:
+          type: boolean
+          description: Indique si l'addon a été exécuté avec succès
+        is_empty:
+          type: boolean
+          description: Indique si le résultat est vide
+        exec_time:
+          type: number
+          description: Temps d'exécution en secondes
+        error:
+          $ref: '#/components/schemas/AddonError'
+        results:
+          description: Résultats de l'addon (format variable selon le type d'addon)
+    AddonTranslationDTO:
+      type: [object, 'null']
+      description: Résultat de traduction
+      required: [success, is_empty, exec_time]
+      properties:
+        success:
+          type: boolean
+        is_empty:
+          type: boolean
+        exec_time:
+          type: number
+        error:
+          $ref: '#/components/schemas/AddonError'
+        results:
+          type: [array, 'null']
+          items:
+            $ref: '#/components/schemas/TranslationResultEntry'
+    TranslationResultEntry:
+      type: object
+      required: [full_transcript, languages, utterances]
+      properties:
+        error:
+          $ref: '#/components/schemas/AddonError'
+        full_transcript:
+          type: string
+          description: Transcription traduite complète
+        languages:
+          type: array
+          items:
+            type: string
+          description: Langues de la traduction
+        sentences:
+          type: [array, 'null']
+          items:
+            type: object
+            additionalProperties: true
+        subtitles:
+          type: [array, 'null']
+          items:
+            $ref: '#/components/schemas/SubtitleFile'
+        words:
+          type: array
+          items:
+            $ref: '#/components/schemas/Word'
+          description: Mots traduits avec timestamps et scores de confiance
+        utterances:
+          type: array
+          items:
+            $ref: '#/components/schemas/Utterance'
+    AddonSummarizationDTO:
+      type: [object, 'null']
+      description: Résultat de résumé
+      required: [success, is_empty, exec_time]
+      properties:
+        success:
+          type: boolean
+        is_empty:
+          type: boolean
+        exec_time:
+          type: number
+        error:
+          $ref: '#/components/schemas/AddonError'
+        results:
+          type: [string, 'null']
+          description: Texte du résumé généré
+    AddonSentimentAnalysisDTO:
+      type: [object, 'null']
+      description: Résultat de l'analyse de sentiments
+      required: [success, is_empty, exec_time]
+      properties:
+        success:
+          type: boolean
+        is_empty:
+          type: boolean
+        exec_time:
+          type: number
+        error:
+          $ref: '#/components/schemas/AddonError'
+        results:
+          type: [array, 'null']
+          items:
+            $ref: '#/components/schemas/SentimentAnalysisEntry'
+    SentimentAnalysisEntry:
+      type: object
+      properties:
+        text:
+          type: string
+          description: La phrase analysée
+        sentiment:
+          type: string
+          enum: [positive, negative, neutral, mixed, unknown]
+          description: Sentiment détecté
+        emotion:
+          type: string
+          description: Émotion détectée (anger, joy, surprise, sadness, fear, disgust, etc.)
+        start:
+          type: number
+          description: Timestamp de début (secondes)
+        end:
+          type: number
+          description: Timestamp de fin (secondes)
+        channel:
+          type: integer
+          description: Canal audio
+        speaker:
+          type: integer
+          description: ID du locuteur (si diarisation activée)
+    AddonNerDTO:
+      type: [object, 'null']
+      description: "[Alpha] Résultat de la reconnaissance d'entités nommées"
+      required: [success, is_empty, exec_time]
+      properties:
+        success:
+          type: boolean
+        is_empty:
+          type: boolean
+        exec_time:
+          type: number
+        error:
+          $ref: '#/components/schemas/AddonError'
+        results:
+          type: [array, 'null']
+          items:
+            $ref: '#/components/schemas/NerEntity'
+    NerEntity:
+      type: object
+      properties:
+        entity_type:
+          type: string
+          description: Type de l'entité (EMAIL_ADDRESS, PERSON, TIME, LOCATION, etc.)
+        text:
+          type: string
+          description: Texte détecté dans l'audio
+        start:
+          type: number
+          description: Timestamp de début (secondes)
+        end:
+          type: number
+          description: Timestamp de fin (secondes)
+    AddonChapterizationDTO:
+      type: [object, 'null']
+      description: "[Alpha] Résultat du chapitrage automatique"
+      required: [success, is_empty, exec_time]
+      properties:
+        success:
+          type: boolean
+        is_empty:
+          type: boolean
+        exec_time:
+          type: number
+        error:
+          $ref: '#/components/schemas/AddonError'
+        results:
+          type: [array, 'null']
+          items:
+            $ref: '#/components/schemas/Chapter'
+    Chapter:
+      type: object
+      properties:
+        summary:
+          type: string
+          description: Résumé du chapitre
+        headline:
+          type: string
+          description: Titre descriptif du chapitre
+        gist:
+          type: string
+          description: Version condensée du titre
+        keywords:
+          type: array
+          items:
+            type: string
+          description: Mots-clés extraits du chapitre
+        start:
+          type: number
+          description: Timestamp de début (secondes)
+        end:
+          type: number
+          description: Timestamp de fin (secondes)
+    AddonAudioToLlmDTO:
+      type: [object, 'null']
+      description: "[Alpha] Résultat du traitement audio vers LLM"
+      required: [success, is_empty, exec_time]
+      properties:
+        success:
+          type: boolean
+        is_empty:
+          type: boolean
+        exec_time:
+          type: number
+        error:
+          $ref: '#/components/schemas/AddonError'
+        results:
+          type: [array, 'null']
+          items:
+            $ref: '#/components/schemas/AudioToLlmResultEntry'
+    AudioToLlmResultEntry:
+      type: object
+      properties:
+        success:
+          type: boolean
+        is_empty:
+          type: boolean
+        results:
+          type: object
+          properties:
+            prompt:
+              type: string
+              description: Le prompt envoyé au LLM
+            response:
+              type: string
+              description: La réponse du LLM
+        exec_time:
+          type: number
+          description: Temps d'exécution pour ce prompt
+        error:
+          $ref: '#/components/schemas/AddonError'
+    BadRequestError:
+      type: object
+      required:
+      - timestamp
+      - path
+      - request_id
+      - statusCode
+      - message
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: Date de l'erreur
+          example: '2023-12-28T09:04:17.210Z'
+        path:
+          type: string
+          description: Chemin de l'endpoint API
+          example: /v2/pre-recorded
+        request_id:
+          type: string
+          description: Identifiant de debug
+          example: G-821fe9df
+        statusCode:
+          type: integer
+          example: 400
+        message:
+          type: string
+          description: Message d'erreur
+          example: Content-Type is missing Multipart Boundary.
+        validation_errors:
+          type: array
+          items:
+            type: string
+          description: Liste des erreurs de validation
+          example:
+          - Field "language" must be a string
+          - Field "min_speakers" must be a number
+    UnauthorizedError:
+      type: object
+      required:
+      - timestamp
+      - path
+      - request_id
+      - statusCode
+      - message
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        path:
+          type: string
+        request_id:
+          type: string
+        statusCode:
+          type: integer
+          example: 401
+        message:
+          type: string
+          example: gladia key not found
+    ForbiddenError:
+      type: object
+      required:
+      - timestamp
+      - path
+      - request_id
+      - statusCode
+      - message
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        path:
+          type: string
+        request_id:
+          type: string
+        statusCode:
+          type: integer
+          example: 403
+        message:
+          type: string
+    NotFoundError:
+      type: object
+      required:
+      - timestamp
+      - path
+      - request_id
+      - statusCode
+      - message
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        path:
+          type: string
+        request_id:
+          type: string
+        statusCode:
+          type: integer
+          example: 404
+        message:
+          type: string
+    UnprocessableEntityError:
+      type: object
+      required:
+      - timestamp
+      - path
+      - request_id
+      - statusCode
+      - message
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        path:
+          type: string
+        request_id:
+          type: string
+        statusCode:
+          type: integer
+          example: 422
+        message:
+          type: string
