@@ -1,6 +1,6 @@
 {
   "name": "@dimer47/gladia-sdk",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Handcrafted TypeScript SDK for the Gladia API — pre-recorded transcription & real-time live streaming via WebSocket",
   "type": "module",
   "publishConfig": {
