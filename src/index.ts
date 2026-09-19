@@ -1,5 +1,6 @@
 // ── Client ───────────────────────────────────────────────
 export { GladiaClient } from './client.js';
+export { GLADIA_OPENAPI_OPERATIONS } from './api-operations.js';
 
 // ── Resources ────────────────────────────────────────────
 export { UploadResource } from './resources/upload.js';
@@ -7,6 +8,12 @@ export { PreRecordedResource } from './resources/pre-recorded.js';
 export type { TranscribeOptions } from './resources/pre-recorded.js';
 export { LiveResource } from './resources/live.js';
 export type { LiveStreamOptions } from './resources/live.js';
+export { TranscriptionResource } from './resources/transcription.js';
+export { HistoryResource } from './resources/history.js';
+export { ModelsResource } from './resources/models.js';
+export { LegacyResource } from './resources/legacy.js';
+export type { LegacyAudioRequest, LegacyVideoRequest } from './resources/legacy.js';
+export type { paths, operations, components } from './generated/openapi.js';
 
 // ── Live Session ─────────────────────────────────────────
 export { LiveSession } from './live/session.js';
@@ -17,13 +24,20 @@ export type {
   LiveEventName,
   LiveBaseMessage,
   LiveTranscriptMessage,
-  LiveSpeechBeginMessage,
-  LiveSpeechEndMessage,
-  LivePreProcessingMessage,
-  LiveRealtimeProcessingMessage,
-  LivePostProcessingMessage,
-  LiveReadyMessage,
-  LiveDoneMessage,
+  LiveSpeechMessage,
+  LiveMessageError,
+  LiveTranslationData,
+  LiveNamedEntityRecognitionData,
+  LiveSentimentAnalysisData,
+  LiveTranslationMessage,
+  LiveNamedEntityRecognitionMessage,
+  LiveSentimentAnalysisMessage,
+  LivePostTranscriptMessage,
+  LivePostFinalTranscriptMessage,
+  LivePostSummarizationMessage,
+  LivePostChapterizationMessage,
+  LiveLifecycleMessage,
+  LiveOpenEvent,
   LiveAcknowledgmentMessage,
   LiveErrorMessage,
 } from './live/events.js';
@@ -63,7 +77,7 @@ export type {
   SummarizationType,
   SummarizationConfig,
   CustomSpellingConfig,
-  StructuredDataExtractionConfig,
+  StructuredDataExtractionDTO,
   AudioToLlmConfig,
   PiiProcessedTextType,
   PiiRedactionConfig,
@@ -78,6 +92,7 @@ export type {
   AudioMetadata,
   UploadResponse,
   // pre-recorded
+  PreRecordedModel,
   PreRecordedRequest,
   PreRecordedCreatedResponse,
   TranscriptionResult,
@@ -110,8 +125,6 @@ export type {
   AddonSentimentAnalysisDTO,
   NerEntity,
   AddonNerDTO,
-  Chapter,
-  AddonChapterizationDTO,
   AudioToLlmResultEntry,
   AddonAudioToLlmDTO,
 } from './types/index.js';

@@ -1,86 +1,71 @@
-import type { Utterance } from '../types/transcription.js';
+import type { components } from '../generated/openapi.js';
+type S = components['schemas'];
 
-// ── Base message ─────────────────────────────────────────
-export interface LiveBaseMessage {
-  type: string;
-  [key: string]: unknown;
+export type LiveBaseMessage =
+  | S['TranscriptMessage'] | S['SpeechStartMessage'] | S['SpeechEndMessage']
+  | S['TranslationMessage'] | S['NamedEntityRecognitionMessage'] | S['SentimentAnalysisMessage']
+  | S['PostTranscriptMessage'] | S['PostFinalTranscriptMessage'] | S['PostSummarizationMessage']
+  | S['AudioChunkAckMessage'] | S['StopRecordingAckMessage']
+  | S['StartSessionMessage'] | S['StartRecordingMessage'] | S['EndRecordingMessage'] | S['EndSessionMessage']
+  | LivePostChapterizationMessage | LiveErrorMessage;
+
+export type LiveTranscriptMessage = S['TranscriptMessage'];
+export type LiveSpeechMessage = S['SpeechStartMessage'] | S['SpeechEndMessage'];
+export type LiveTranslationData = S['TranslationData'];
+export type LiveNamedEntityRecognitionData = S['NamedEntityRecognitionData'];
+export type LiveSentimentAnalysisData = S['SentimentAnalysisData'];
+export type LiveTranslationMessage = S['TranslationMessage'];
+export type LiveNamedEntityRecognitionMessage = S['NamedEntityRecognitionMessage'];
+export type LiveSentimentAnalysisMessage = S['SentimentAnalysisMessage'];
+export type LivePostTranscriptMessage = S['PostTranscriptMessage'];
+export type LivePostFinalTranscriptMessage = S['PostFinalTranscriptMessage'];
+export type LivePostSummarizationMessage = S['PostSummarizationMessage'];
+export type LiveAcknowledgmentMessage = S['AudioChunkAckMessage'] | S['StopRecordingAckMessage'];
+export type LiveLifecycleMessage = S['StartSessionMessage'] | S['StartRecordingMessage'] | S['EndRecordingMessage'] | S['EndSessionMessage'];
+export type LiveMessageError = S['Error'];
+
+export interface LiveChapter {
+  abstractive_summary?: string;
+  extractive_summary?: string;
+  summary?: string;
+  headline?: string;
+  gist?: string;
+  keywords?: string[];
+  start?: number;
+  end?: number;
 }
-
-// ── Transcript messages ──────────────────────────────────
-export interface LiveTranscriptMessage {
-  type: 'transcript';
-  transcription: {
-    type: 'partial' | 'final';
-    text: string;
-    language: string;
-    time_begin: number;
-    time_end: number;
-    utterance: Utterance;
-  };
+export interface LivePostChapterizationMessage {
+  session_id: string;
+  created_at: string;
+  error?: { status_code?: number | string; exception?: string; message?: string } | null;
+  type: 'post_chapterization';
+  data: { results?: LiveChapter[] };
 }
+export interface LiveErrorMessage { type: 'error'; code?: number; message?: string; [key: string]: unknown }
+/** SDK transport event, not a Gladia protocol message. */
+export interface LiveOpenEvent { type: 'open' }
 
-// ── Speech events ────────────────────────────────────────
-export interface LiveSpeechBeginMessage {
-  type: 'speech-begin';
-}
-
-export interface LiveSpeechEndMessage {
-  type: 'speech-end';
-}
-
-// ── Processing events ────────────────────────────────────
-export interface LivePreProcessingMessage {
-  type: 'pre-processing';
-  [key: string]: unknown;
-}
-
-export interface LiveRealtimeProcessingMessage {
-  type: 'realtime-processing';
-  [key: string]: unknown;
-}
-
-export interface LivePostProcessingMessage {
-  type: 'post-processing';
-  [key: string]: unknown;
-}
-
-// ── Lifecycle events ─────────────────────────────────────
-export interface LiveReadyMessage {
-  type: 'ready';
-}
-
-export interface LiveDoneMessage {
-  type: 'done';
-}
-
-// ── Acknowledgment ───────────────────────────────────────
-export interface LiveAcknowledgmentMessage {
-  type: 'acknowledgment';
-  [key: string]: unknown;
-}
-
-// ── Error ────────────────────────────────────────────────
-export interface LiveErrorMessage {
-  type: 'error';
-  code?: number;
-  message?: string;
-  [key: string]: unknown;
-}
-
-// ── Event map (for typed .on()) ──────────────────────────
 export interface LiveEventMap {
+  open: LiveOpenEvent;
+  transcript: LiveTranscriptMessage;
   'transcript:partial': LiveTranscriptMessage;
   'transcript:final': LiveTranscriptMessage;
-  'speech-begin': LiveSpeechBeginMessage;
-  'speech-end': LiveSpeechEndMessage;
-  'pre-processing': LivePreProcessingMessage;
-  'realtime-processing': LiveRealtimeProcessingMessage;
-  'post-processing': LivePostProcessingMessage;
-  ready: LiveReadyMessage;
-  done: LiveDoneMessage;
-  acknowledgment: LiveAcknowledgmentMessage;
+  speech_start: S['SpeechStartMessage'];
+  speech_end: S['SpeechEndMessage'];
+  translation: LiveTranslationMessage;
+  named_entity_recognition: LiveNamedEntityRecognitionMessage;
+  sentiment_analysis: LiveSentimentAnalysisMessage;
+  post_transcript: LivePostTranscriptMessage;
+  post_final_transcript: LivePostFinalTranscriptMessage;
+  post_summarization: LivePostSummarizationMessage;
+  post_chapterization: LivePostChapterizationMessage;
+  audio_chunk: S['AudioChunkAckMessage'];
+  stop_recording: S['StopRecordingAckMessage'];
+  start_session: S['StartSessionMessage'];
+  start_recording: S['StartRecordingMessage'];
+  end_recording: S['EndRecordingMessage'];
+  end_session: S['EndSessionMessage'];
   error: LiveErrorMessage;
   message: LiveBaseMessage;
 }
-
 export type LiveEventName = keyof LiveEventMap;

@@ -1,6 +1,7 @@
 import type { HttpClient } from '../http.js';
 import type { PaginationParams, PaginatedResponse } from '../types/common.js';
 import type { LiveRequest, LiveCreatedResponse, LiveResponse, LiveRegion } from '../types/live.js';
+import type { PatchLiveRequest } from '../types/live.js';
 import { LiveSession } from '../live/session.js';
 
 export interface LiveStreamOptions extends LiveRequest {
@@ -66,6 +67,11 @@ export class LiveResource {
     return this.http.delete(`/v2/live/${id}`, signal);
   }
 
+  /** Attach post-session diagnostic metadata to a live job. */
+  async patch(id: string, request: PatchLiveRequest, signal?: AbortSignal): Promise<void> {
+    return this.http.patch(`/v2/live/${id}`, request, signal);
+  }
+
   /**
    * Download the audio recording of a live session.
    */
@@ -87,19 +93,19 @@ export class LiveResource {
         wsCtor ?? this.WebSocketCtor,
       );
 
-      const onReady = () => {
-        session.off('ready', onReady);
+      const onOpen = () => {
+        session.off('open', onOpen);
         session.off('error', onError);
         resolve(session);
       };
 
       const onError = (err: { message?: string }) => {
-        session.off('ready', onReady);
+        session.off('open', onOpen);
         session.off('error', onError);
         reject(new Error(err.message ?? 'WebSocket connection failed'));
       };
 
-      session.on('ready', onReady);
+      session.on('open', onOpen);
       session.on('error', onError);
     });
   }

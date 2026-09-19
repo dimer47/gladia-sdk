@@ -13,16 +13,16 @@ export interface PaginationParams {
 export interface PaginatedResponse<T> {
   first: string;
   current: string;
-  next?: string | null;
+  next: string | null;
   items: T[];
 }
 
 export interface FileResponse {
-  id?: string;
-  filename?: string | null;
-  source?: string | null;
-  audio_duration?: number | null;
-  number_of_channels?: number | null;
+  id: string;
+  filename: string | null;
+  source: string | null;
+  audio_duration: number | null;
+  number_of_channels: number | null;
 }
 
 export interface GladiaClientConfig {

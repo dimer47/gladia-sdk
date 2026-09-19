@@ -5,3 +5,4 @@ export type * from './pre-recorded.js';
 export type * from './live.js';
 export type * from './transcription.js';
 export type * from './addons.js';
+export type * from './operations.js';

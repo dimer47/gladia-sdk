@@ -42,6 +42,11 @@ import { GladiaClient } from '@dimer47/gladia-sdk';
 const gladia = new GladiaClient({ apiKey: 'gla_xxx' });
 ```
 
+Le client expose toutes les opérations du contrat OpenAPI publié par Gladia via
+`upload`, `preRecorded`, `live`, `transcription`, `history`, `models` et `legacy`.
+Les routes dépréciées restent accessibles sous `transcription` et `legacy` afin de
+garantir une couverture complète du contrat.
+
 ## 🕹️ Usage
 
 ### 📤 Upload
@@ -62,6 +67,7 @@ const uploaded = await gladia.upload.fromUrl('https://example.com/audio.mp3');
 ```typescript
 const result = await gladia.preRecorded.transcribe({
   audio_url: 'https://example.com/audio.mp3',
+  model: 'solaria-3',
   diarization: true,
   translation: true,
   translation_config: { target_languages: ['en'] },
@@ -111,12 +117,12 @@ const session = await gladia.live.stream({
 
 // 📝 Écouter les transcriptions finales
 session.on('transcript:final', (msg) => {
-  console.log(`🗣️ ${msg.transcription.text}`);
+  console.log(`🗣️ ${msg.data.utterance.text}`);
 });
 
 // 📝 Écouter les transcriptions partielles
 session.on('transcript:partial', (msg) => {
-  process.stdout.write(`... ${msg.transcription.text}\r`);
+  process.stdout.write(`... ${msg.data.utterance.text}\r`);
 });
 
 // 🎤 Envoyer des chunks audio
@@ -221,6 +227,7 @@ new GladiaClient(config: GladiaClientConfig)
 | `on(event, listener)` | 👂 Écouter un événement typé |
 | `off(event, listener)` | 🔇 Retirer un listener |
 | `sendAudio(data)` | 🎤 Envoyer un chunk audio |
+| `sendAudioBase64(chunk)` | 🎤 Envoyer l'action audio JSON/base64 de l'AsyncAPI |
 | `stop()` | ⏹️ Signaler la fin et attendre le traitement |
 | `closed` | `boolean` — état du WebSocket |
 
@@ -230,10 +237,10 @@ new GladiaClient(config: GladiaClientConfig)
 |-----------|------|-------------|
 | `transcript:final` | `LiveTranscriptMessage` | Transcription finale d'un énoncé |
 | `transcript:partial` | `LiveTranscriptMessage` | Transcription partielle en cours |
-| `speech-begin` | `LiveSpeechBeginMessage` | Début de parole détecté |
-| `speech-end` | `LiveSpeechEndMessage` | Fin de parole détectée |
-| `ready` | `LiveReadyMessage` | Session prête à recevoir l'audio |
-| `done` | `LiveDoneMessage` | Traitement terminé |
+| `speech_start` / `speech_end` | `LiveSpeechMessage` | Activité vocale détectée |
+| `start_session` / `end_session` | `LiveLifecycleMessage` | Cycle de vie de la session Gladia |
+| `translation`, `named_entity_recognition`, `sentiment_analysis` | Messages d'add-on typés | Résultats en temps réel |
+| `post_transcript`, `post_final_transcript`, `post_summarization`, `post_chapterization` | Messages de post-traitement typés | Résultats du post-traitement |
 | `error` | `LiveErrorMessage` | Erreur WebSocket |
 | `message` | `LiveBaseMessage` | Tout message brut (catch-all) |
 
@@ -317,7 +324,7 @@ gladia-sdk/
 │   │   ├── config.ts         # LanguageConfig, DiarizationConfig, PiiRedactionConfig...
 │   │   ├── common.ts         # JobStatus, PaginationParams, GladiaClientConfig
 │   │   ├── upload.ts         # UploadResponse, AudioMetadata
-│   │   ├── pre-recorded.ts   # PreRecordedRequest (31 champs), responses
+│   │   ├── pre-recorded.ts   # Modèles, requête et réponses pré-enregistrées
 │   │   ├── live.ts           # LiveRequest, LiveResponse, LiveRequestParams
 │   │   ├── transcription.ts  # Utterance, Word, TranscriptionDTO
 │   │   └── addons.ts         # AddonTranslationDTO, SentimentAnalysisEntry...
@@ -330,9 +337,10 @@ gladia-sdk/
 │   │   └── events.ts         # LiveEventMap (11 types d'événements)
 │   └── utils/
 │       └── polling.ts        # poll() avec backoff exponentiel
-├── tests/                    # 91 tests unitaires (vitest)
+├── tests/                    # Tests unitaires et contractuels (vitest)
 ├── docs/
-│   └── openapi.yaml          # Spécification OpenAPI Gladia (source de vérité)
+│   ├── openapi.json          # Spécification OpenAPI officielle de Gladia
+│   └── asyncapi.yaml          # Spécification WebSocket officielle de Gladia
 ├── dist/                     # Build output (ESM + CJS + .d.ts)
 ├── package.json
 ├── tsconfig.json

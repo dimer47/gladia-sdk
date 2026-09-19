@@ -5,15 +5,16 @@ export class UploadResource {
   constructor(private readonly http: HttpClient) {}
 
   /**
-   * Upload a file (Blob, File, or Buffer) to Gladia.
+   * Upload a file (Blob, File, Uint8Array, or Node.js Buffer) to Gladia.
    */
   async fromFile(
-    file: Blob,
+    file: Blob | Uint8Array,
     filename = 'audio',
     signal?: AbortSignal,
   ): Promise<UploadResponse> {
     const form = new FormData();
-    form.append('audio', file, filename);
+    const blob = file instanceof Blob ? file : new Blob([file as BlobPart]);
+    form.append('audio', blob, filename);
     return this.http.postForm<UploadResponse>('/v2/upload', form, signal);
   }
 

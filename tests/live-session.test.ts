@@ -24,6 +24,10 @@ class MockWebSocket {
     this.sent.push(data);
   }
 
+  simulateOpen() {
+    for (const l of this.listeners.get('open') ?? []) l({});
+  }
+
   // Helpers pour simuler les événements
   simulateMessage(data: string) {
     for (const l of this.listeners.get('message') ?? []) {
@@ -79,17 +83,17 @@ describe('LiveSession', () => {
     it('on() enregistre un listener et retourne this', () => {
       const { session } = createSession();
       const listener = vi.fn();
-      const ret = session.on('ready', listener);
+      const ret = session.on('start_session', listener);
       expect(ret).toBe(session);
     });
 
     it('off() supprime un listener', () => {
       const { session, ws } = createSession();
       const listener = vi.fn();
-      session.on('ready', listener);
-      session.off('ready', listener);
+      session.on('start_session', listener);
+      session.off('start_session', listener);
 
-      ws.simulateMessage(JSON.stringify({ type: 'ready' }));
+      ws.simulateMessage(JSON.stringify({ type: 'start_session' }));
       expect(listener).not.toHaveBeenCalled();
     });
   });
@@ -102,11 +106,11 @@ describe('LiveSession', () => {
 
       ws.simulateMessage(JSON.stringify({
         type: 'transcript',
-        transcription: { type: 'final', text: 'Bonjour' },
+        data: { id: 'utt-1', is_final: true, utterance: { text: 'Bonjour' } },
       }));
 
       expect(listener).toHaveBeenCalledOnce();
-      expect(listener.mock.calls[0][0].transcription.text).toBe('Bonjour');
+      expect(listener.mock.calls[0][0].data.utterance.text).toBe('Bonjour');
     });
 
     it('émet transcript:partial pour un message partiel', () => {
@@ -116,7 +120,7 @@ describe('LiveSession', () => {
 
       ws.simulateMessage(JSON.stringify({
         type: 'transcript',
-        transcription: { type: 'partial', text: 'Bon' },
+        data: { id: 'utt-1', is_final: false, utterance: { text: 'Bon' } },
       }));
 
       expect(listener).toHaveBeenCalledOnce();
@@ -129,7 +133,7 @@ describe('LiveSession', () => {
 
       ws.simulateMessage(JSON.stringify({
         type: 'transcript',
-        transcription: { type: 'partial', text: 'Bon' },
+        data: { id: 'utt-1', is_final: false, utterance: { text: 'Bon' } },
       }));
 
       expect(finalListener).not.toHaveBeenCalled();
@@ -142,44 +146,44 @@ describe('LiveSession', () => {
       const listener = vi.fn();
       session.on('message', listener);
 
-      ws.simulateMessage(JSON.stringify({ type: 'ready' }));
-      ws.simulateMessage(JSON.stringify({ type: 'done' }));
-      ws.simulateMessage(JSON.stringify({ type: 'transcript', transcription: { type: 'final', text: 'Hi' } }));
+      ws.simulateMessage(JSON.stringify({ type: 'start_session' }));
+      ws.simulateMessage(JSON.stringify({ type: 'end_session' }));
+      ws.simulateMessage(JSON.stringify({ type: 'transcript', data: { id: '1', is_final: true, utterance: { text: 'Hi' } } }));
 
       expect(listener).toHaveBeenCalledTimes(3);
     });
   });
 
   describe('événements de cycle de vie', () => {
-    it('émet ready', () => {
+    it('émet start_session', () => {
       const { session, ws } = createSession();
       const listener = vi.fn();
-      session.on('ready', listener);
+      session.on('start_session', listener);
 
-      ws.simulateMessage(JSON.stringify({ type: 'ready' }));
+      ws.simulateMessage(JSON.stringify({ type: 'start_session' }));
       expect(listener).toHaveBeenCalledOnce();
     });
 
-    it('émet done et résout la donePromise', async () => {
+    it('émet end_session', async () => {
       const { session, ws } = createSession();
       const listener = vi.fn();
-      session.on('done', listener);
+      session.on('end_session', listener);
 
       // Envoi de stop puis done
-      ws.simulateMessage(JSON.stringify({ type: 'done' }));
+      ws.simulateMessage(JSON.stringify({ type: 'end_session' }));
 
       expect(listener).toHaveBeenCalledOnce();
     });
 
-    it('émet speech-begin et speech-end', () => {
+    it('émet speech_start et speech_end', () => {
       const { session, ws } = createSession();
       const beginListener = vi.fn();
       const endListener = vi.fn();
-      session.on('speech-begin', beginListener);
-      session.on('speech-end', endListener);
+      session.on('speech_start', beginListener);
+      session.on('speech_end', endListener);
 
-      ws.simulateMessage(JSON.stringify({ type: 'speech-begin' }));
-      ws.simulateMessage(JSON.stringify({ type: 'speech-end' }));
+      ws.simulateMessage(JSON.stringify({ type: 'speech_start', data: {} }));
+      ws.simulateMessage(JSON.stringify({ type: 'speech_end', data: {} }));
 
       expect(beginListener).toHaveBeenCalledOnce();
       expect(endListener).toHaveBeenCalledOnce();
@@ -224,26 +228,26 @@ describe('LiveSession', () => {
   });
 
   describe('stop()', () => {
-    it('envoie {"type":"stop"} via le WebSocket', async () => {
+    it('envoie {"type":"stop_recording"} via le WebSocket', async () => {
       const { session, ws } = createSession();
 
       // Simuler done immédiatement après stop
       const stopPromise = session.stop();
-      ws.simulateMessage(JSON.stringify({ type: 'done' }));
+      ws.simulateMessage(JSON.stringify({ type: 'end_session' }));
       await stopPromise;
 
       expect(ws.sent).toHaveLength(1);
-      expect(JSON.parse(ws.sent[0] as string)).toEqual({ type: 'stop' });
+      expect(JSON.parse(ws.sent[0] as string)).toEqual({ type: 'stop_recording' });
     });
 
-    it('résout quand le message done arrive', async () => {
+    it('résout quand le message end_session arrive', async () => {
       const { session, ws } = createSession();
 
       const stopPromise = session.stop();
 
       // Simuler un délai puis done
       setTimeout(() => {
-        ws.simulateMessage(JSON.stringify({ type: 'done' }));
+        ws.simulateMessage(JSON.stringify({ type: 'end_session' }));
       }, 10);
 
       await stopPromise; // Ne doit pas timeout

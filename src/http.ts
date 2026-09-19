@@ -37,6 +37,16 @@ export class HttpClient {
     });
   }
 
+  async patch(path: string, body?: unknown, signal?: AbortSignal): Promise<void> {
+    const url = this.buildUrl(path);
+    await this.requestVoid(url, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: body != null ? JSON.stringify(body) : undefined,
+      signal,
+    });
+  }
+
   async postForm<T>(path: string, formData: FormData, signal?: AbortSignal): Promise<T> {
     const url = this.buildUrl(path);
     return this.request<T>(url, {
@@ -44,6 +54,14 @@ export class HttpClient {
       body: formData,
       signal,
     });
+  }
+
+  async postFormVoid(path: string, formData: FormData, signal?: AbortSignal): Promise<void> {
+    await this.requestVoid(this.buildUrl(path), { method: 'POST', body: formData, signal });
+  }
+
+  async getVoid(path: string, signal?: AbortSignal): Promise<void> {
+    await this.requestVoid(this.buildUrl(path), { method: 'GET', signal });
   }
 
   async delete(path: string, signal?: AbortSignal): Promise<void> {
@@ -105,6 +123,14 @@ export class HttpClient {
       await this.throwApiError(res);
     }
     return (await res.json()) as T;
+  }
+
+  private async requestVoid(url: string, init: RequestInit): Promise<void> {
+    const res = await fetch(url, {
+      ...init,
+      headers: { ...this.headers(), ...(init.headers as Record<string, string> | undefined) },
+    });
+    if (!res.ok) await this.throwApiError(res);
   }
 
   private async throwApiError(res: Response): Promise<never> {

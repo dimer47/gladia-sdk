@@ -46,6 +46,17 @@ describe('UploadResource', () => {
     expect(form).toBeInstanceOf(FormData);
   });
 
+  it('fromFile() accepte les données binaires Node.js', async () => {
+    const http = createMockHttp();
+    (http.postForm as ReturnType<typeof vi.fn>).mockResolvedValue({});
+
+    const resource = new UploadResource(http);
+    await resource.fromFile(new Uint8Array([1, 2, 3]), 'audio.raw');
+
+    const [, form] = (http.postForm as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(form.get('audio')).toBeInstanceOf(Blob);
+  });
+
   it('fromUrl() appelle post avec le bon body', async () => {
     const http = createMockHttp();
     const expected = { audio_url: 'https://api.gladia.io/file/abc' };

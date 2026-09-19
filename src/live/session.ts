@@ -23,6 +23,10 @@ export class LiveSession {
       this.handleMessage(event);
     });
 
+    this.ws.addEventListener('open', () => {
+      this.emit('open', { type: 'open' });
+    });
+
     this.ws.addEventListener('close', (event: CloseEvent) => {
       this._closed = true;
       if (event.code !== 1000 && event.code !== 1005) {
@@ -72,14 +76,20 @@ export class LiveSession {
     this.ws.send(data);
   }
 
+  /** Send a base64-encoded audio chunk using the JSON action from the AsyncAPI contract. */
+  sendAudioBase64(chunk: string): void {
+    if (this._closed) throw new GladiaWebSocketError('Cannot send audio: session is closed');
+    this.ws.send(JSON.stringify({ type: 'audio_chunk', data: { chunk } }));
+  }
+
   /**
    * Signal end of audio and wait for the server to finish processing.
-   * Returns a promise that resolves when the "done" message is received or the socket closes.
+   * Returns a promise that resolves when the session ends or the socket closes.
    */
   async stop(): Promise<void> {
     if (this._closed) return;
 
-    this.ws.send(JSON.stringify({ type: 'stop' }));
+    this.ws.send(JSON.stringify({ type: 'stop_recording' }));
     await this._donePromise;
   }
 
@@ -106,17 +116,17 @@ export class LiveSession {
     // Route transcript messages to typed channels
     if (msg.type === 'transcript') {
       const transcript = msg as unknown as LiveTranscriptMessage;
-      if (transcript.transcription?.type === 'partial') {
+      this.emit('transcript', transcript);
+      if (transcript.data?.is_final === false) {
         this.emit('transcript:partial', transcript);
-      } else if (transcript.transcription?.type === 'final') {
+      } else if (transcript.data?.is_final === true) {
         this.emit('transcript:final', transcript);
       }
       return;
     }
 
-    // Route "done" to resolve the stop promise
-    if (msg.type === 'done') {
-      this.emit('done', msg as LiveEventMap['done']);
+    if (msg.type === 'end_session') {
+      this.emit('end_session', msg as unknown as LiveEventMap['end_session']);
       this._donePromiseResolve?.();
       return;
     }

@@ -40,6 +40,11 @@ import { GladiaClient } from '@dimer47/gladia-sdk';
 const gladia = new GladiaClient({ apiKey: 'gla_xxx' });
 ```
 
+The client exposes every operation in Gladia's published OpenAPI contract through
+`upload`, `preRecorded`, `live`, `transcription`, `history`, `models`, and `legacy`.
+The deprecated endpoints remain available under `transcription` and `legacy` for
+complete contract coverage.
+
 ## 🕹️ Usage
 
 ### 📤 Upload
@@ -60,6 +65,7 @@ const uploaded = await gladia.upload.fromUrl('https://example.com/audio.mp3');
 ```typescript
 const result = await gladia.preRecorded.transcribe({
   audio_url: 'https://example.com/audio.mp3',
+  model: 'solaria-3',
   diarization: true,
   translation: true,
   translation_config: { target_languages: ['en'] },
@@ -109,12 +115,12 @@ const session = await gladia.live.stream({
 
 // 📝 Listen to final transcriptions
 session.on('transcript:final', (msg) => {
-  console.log(`🗣️ ${msg.transcription.text}`);
+  console.log(`🗣️ ${msg.data.utterance.text}`);
 });
 
 // 📝 Listen to partial transcriptions
 session.on('transcript:partial', (msg) => {
-  process.stdout.write(`... ${msg.transcription.text}\r`);
+  process.stdout.write(`... ${msg.data.utterance.text}\r`);
 });
 
 // 🎤 Send audio chunks
@@ -219,6 +225,7 @@ new GladiaClient(config: GladiaClientConfig)
 | `on(event, listener)` | 👂 Listen to a typed event |
 | `off(event, listener)` | 🔇 Remove a listener |
 | `sendAudio(data)` | 🎤 Send an audio chunk |
+| `sendAudioBase64(chunk)` | 🎤 Send the AsyncAPI JSON/base64 audio action |
 | `stop()` | ⏹️ Signal end and wait for processing |
 | `closed` | `boolean` — WebSocket state |
 
@@ -228,10 +235,10 @@ new GladiaClient(config: GladiaClientConfig)
 |-------|------|-------------|
 | `transcript:final` | `LiveTranscriptMessage` | Final transcription of an utterance |
 | `transcript:partial` | `LiveTranscriptMessage` | Partial transcription in progress |
-| `speech-begin` | `LiveSpeechBeginMessage` | Speech start detected |
-| `speech-end` | `LiveSpeechEndMessage` | Speech end detected |
-| `ready` | `LiveReadyMessage` | Session ready to receive audio |
-| `done` | `LiveDoneMessage` | Processing complete |
+| `speech_start` / `speech_end` | `LiveSpeechMessage` | Speech activity detected |
+| `start_session` / `end_session` | `LiveLifecycleMessage` | Gladia session lifecycle |
+| `translation`, `named_entity_recognition`, `sentiment_analysis` | Typed add-on messages | Real-time processing results |
+| `post_transcript`, `post_final_transcript`, `post_summarization`, `post_chapterization` | Typed post-processing messages | Post-processing results |
 | `error` | `LiveErrorMessage` | WebSocket error |
 | `message` | `LiveBaseMessage` | Any raw message (catch-all) |
 
@@ -315,7 +322,7 @@ gladia-sdk/
 │   │   ├── config.ts         # LanguageConfig, DiarizationConfig, PiiRedactionConfig...
 │   │   ├── common.ts         # JobStatus, PaginationParams, GladiaClientConfig
 │   │   ├── upload.ts         # UploadResponse, AudioMetadata
-│   │   ├── pre-recorded.ts   # PreRecordedRequest (31 fields), responses
+│   │   ├── pre-recorded.ts   # Pre-recorded models, request and responses
 │   │   ├── live.ts           # LiveRequest, LiveResponse, LiveRequestParams
 │   │   ├── transcription.ts  # Utterance, Word, TranscriptionDTO
 │   │   └── addons.ts         # AddonTranslationDTO, SentimentAnalysisEntry...
@@ -323,14 +330,21 @@ gladia-sdk/
 │   │   ├── upload.ts         # .fromFile(), .fromUrl()
 │   │   ├── pre-recorded.ts   # .create(), .get(), .list(), .delete(), .getFile(), .transcribe()
 │   │   └── live.ts           # .init(), .get(), .list(), .delete(), .getFile(), .stream()
+│   │   ├── transcription.ts  # Deprecated unified v2 transcription routes
+│   │   ├── history.ts        # v1 history
+│   │   ├── models.ts         # OpenRouter-compatible models route
+│   │   └── legacy.ts         # Legacy audio/video-to-text routes
+│   ├── generated/
+│   │   └── openapi.ts        # Generated exact types; do not edit manually
 │   ├── live/
 │   │   ├── session.ts        # LiveSession (typed WebSocket)
 │   │   └── events.ts         # LiveEventMap (11 event types)
 │   └── utils/
 │       └── polling.ts        # poll() with exponential backoff
-├── tests/                    # 91 unit tests (vitest)
+├── tests/                    # Unit and contract tests (vitest)
 ├── docs/
-│   └── openapi.yaml          # Gladia OpenAPI specification (source of truth)
+│   ├── openapi.json          # Official Gladia OpenAPI specification
+│   └── asyncapi.yaml          # Official Gladia WebSocket specification
 ├── dist/                     # Build output (ESM + CJS + .d.ts)
 ├── package.json
 ├── tsconfig.json
