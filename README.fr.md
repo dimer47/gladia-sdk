@@ -1,6 +1,6 @@
-# 🎙️ Gladia SDK — TypeScript Client
-
 ![Version](https://img.shields.io/npm/v/@dimer47/gladia-sdk?color=red&style=flat-square) ![Bundle Size](https://img.shields.io/bundlephobia/minzip/@dimer47/gladia-sdk?color=green&label=bundle%20size&style=flat-square) ![Downloads](https://img.shields.io/npm/dt/@dimer47/gladia-sdk?style=flat-square) ![TypeScript](https://img.shields.io/badge/TypeScript-5.7%2B-3178C6?style=flat-square&logo=typescript&logoColor=white) ![Node](https://img.shields.io/badge/Node.js-18%2B-339933?style=flat-square&logo=node.js&logoColor=white) ![License](https://img.shields.io/npm/l/@dimer47/gladia-sdk?style=flat-square) ![Zero Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen?style=flat-square) ![Build](https://img.shields.io/badge/build-ESM%20%2B%20CJS-blue?style=flat-square)
+
+# 🎙️ Gladia SDK — TypeScript Client
 
 **SDK TypeScript fait main pour l'[API Gladia](https://docs.gladia.io)** — transcription audio/vidéo pré-enregistrée et en temps réel, avec support complet du WebSocket live streaming.
 
