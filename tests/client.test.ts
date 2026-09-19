@@ -1,10 +1,11 @@
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import { GladiaClient } from '../src/client.js';
 import { UploadResource } from '../src/resources/upload.js';
 import { PreRecordedResource } from '../src/resources/pre-recorded.js';
 import { LiveResource } from '../src/resources/live.js';
 
 describe('GladiaClient', () => {
+  afterEach(() => vi.unstubAllEnvs());
   it('crée un client avec une apiKey', () => {
     const client = new GladiaClient({ apiKey: 'gla_test123' });
 
@@ -26,6 +27,10 @@ describe('GladiaClient', () => {
     expect(client).toBeInstanceOf(GladiaClient);
   });
 
+  it('accepte un proxy sans clé API', () => {
+    expect(() => new GladiaClient({ baseUrl: 'https://proxy.example.com' })).not.toThrow();
+  });
+
   it('accepte un constructeur WebSocket personnalisé', () => {
     const MockWS = class {};
     const client = new GladiaClient({
@@ -34,5 +39,10 @@ describe('GladiaClient', () => {
     });
     expect(client).toBeInstanceOf(GladiaClient);
     expect(client.live).toBeInstanceOf(LiveResource);
+  });
+
+  it('se construit sans argument depuis GLADIA_API_KEY', () => {
+    vi.stubEnv('GLADIA_API_KEY', 'gla_environment');
+    expect(() => new GladiaClient()).not.toThrow();
   });
 });

@@ -9,11 +9,19 @@ export class LegacyResource {
   constructor(private readonly http: HttpClient) {}
 
   async audioToText(request: LegacyAudioRequest, signal?: AbortSignal): Promise<void> {
-    return this.http.postFormVoid('/audio/text/audio-transcription', toForm(request, 'audio'), signal);
+    return this.http.postFormVoid(
+      '/audio/text/audio-transcription',
+      toForm(request, 'audio'),
+      signal,
+    );
   }
 
   async videoToText(request: LegacyVideoRequest, signal?: AbortSignal): Promise<void> {
-    return this.http.postFormVoid('/video/text/video-transcription', toForm(request, 'video'), signal);
+    return this.http.postFormVoid(
+      '/video/text/video-transcription',
+      toForm(request, 'video'),
+      signal,
+    );
   }
 }
 

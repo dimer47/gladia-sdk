@@ -2,12 +2,23 @@ import type { components } from '../generated/openapi.js';
 type S = components['schemas'];
 
 export type LiveBaseMessage =
-  | S['TranscriptMessage'] | S['SpeechStartMessage'] | S['SpeechEndMessage']
-  | S['TranslationMessage'] | S['NamedEntityRecognitionMessage'] | S['SentimentAnalysisMessage']
-  | S['PostTranscriptMessage'] | S['PostFinalTranscriptMessage'] | S['PostSummarizationMessage']
-  | S['AudioChunkAckMessage'] | S['StopRecordingAckMessage']
-  | S['StartSessionMessage'] | S['StartRecordingMessage'] | S['EndRecordingMessage'] | S['EndSessionMessage']
-  | LivePostChapterizationMessage | LiveErrorMessage;
+  | S['TranscriptMessage']
+  | S['SpeechStartMessage']
+  | S['SpeechEndMessage']
+  | S['TranslationMessage']
+  | S['NamedEntityRecognitionMessage']
+  | S['SentimentAnalysisMessage']
+  | S['PostTranscriptMessage']
+  | S['PostFinalTranscriptMessage']
+  | S['PostSummarizationMessage']
+  | S['AudioChunkAckMessage']
+  | S['StopRecordingAckMessage']
+  | S['StartSessionMessage']
+  | S['StartRecordingMessage']
+  | S['EndRecordingMessage']
+  | S['EndSessionMessage']
+  | LivePostChapterizationMessage
+  | LiveErrorMessage;
 
 export type LiveTranscriptMessage = S['TranscriptMessage'];
 export type LiveSpeechMessage = S['SpeechStartMessage'] | S['SpeechEndMessage'];
@@ -21,7 +32,11 @@ export type LivePostTranscriptMessage = S['PostTranscriptMessage'];
 export type LivePostFinalTranscriptMessage = S['PostFinalTranscriptMessage'];
 export type LivePostSummarizationMessage = S['PostSummarizationMessage'];
 export type LiveAcknowledgmentMessage = S['AudioChunkAckMessage'] | S['StopRecordingAckMessage'];
-export type LiveLifecycleMessage = S['StartSessionMessage'] | S['StartRecordingMessage'] | S['EndRecordingMessage'] | S['EndSessionMessage'];
+export type LiveLifecycleMessage =
+  | S['StartSessionMessage']
+  | S['StartRecordingMessage']
+  | S['EndRecordingMessage']
+  | S['EndSessionMessage'];
 export type LiveMessageError = S['Error'];
 
 export interface LiveChapter {
@@ -41,12 +56,31 @@ export interface LivePostChapterizationMessage {
   type: 'post_chapterization';
   data: { results?: LiveChapter[] };
 }
-export interface LiveErrorMessage { type: 'error'; code?: number; message?: string; [key: string]: unknown }
+export interface LiveErrorMessage {
+  type: 'error';
+  code?: number;
+  message?: string;
+  [key: string]: unknown;
+}
 /** SDK transport event, not a Gladia protocol message. */
-export interface LiveOpenEvent { type: 'open' }
+export interface LiveOpenEvent {
+  type: 'open';
+}
+export type LiveSessionStatus = 'starting' | 'connecting' | 'connected' | 'ending' | 'ended';
+export interface LiveConnectionEvent {
+  attempt: number;
+}
+export interface LiveEndingEvent {
+  code: number;
+  reason?: string;
+}
 
 export interface LiveEventMap {
   open: LiveOpenEvent;
+  connecting: LiveConnectionEvent;
+  connected: LiveConnectionEvent;
+  ending: LiveEndingEvent;
+  ended: LiveEndingEvent;
   transcript: LiveTranscriptMessage;
   'transcript:partial': LiveTranscriptMessage;
   'transcript:final': LiveTranscriptMessage;

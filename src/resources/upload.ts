@@ -8,10 +8,21 @@ export class UploadResource {
    * Upload a file (Blob, File, Uint8Array, or Node.js Buffer) to Gladia.
    */
   async fromFile(
-    file: Blob | Uint8Array,
+    file: Blob | Uint8Array | string,
     filename = 'audio',
     signal?: AbortSignal,
   ): Promise<UploadResponse> {
+    if (typeof file === 'string') {
+      // Variable imports keep the browser bundle free of statically resolved Node built-ins.
+      const fsModule = 'node:fs/promises';
+      const pathModule = 'node:path';
+      const [{ readFile }, { basename }] = await Promise.all([
+        import(fsModule),
+        import(pathModule),
+      ]);
+      const bytes = await readFile(file);
+      return this.fromFile(bytes, filename === 'audio' ? basename(file) : filename, signal);
+    }
     const form = new FormData();
     const blob = file instanceof Blob ? file : new Blob([file as BlobPart]);
     form.append('audio', blob, filename);

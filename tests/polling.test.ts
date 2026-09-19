@@ -34,7 +34,7 @@ describe('poll()', () => {
     expect(result).toEqual({ status: 'done' });
   });
 
-  it('appelle fn plusieurs fois jusqu\'à isDone', async () => {
+  it("appelle fn plusieurs fois jusqu'à isDone", async () => {
     let call = 0;
     const fn = vi.fn().mockImplementation(() => {
       call++;
@@ -119,15 +119,16 @@ describe('poll()', () => {
 
   it('applique le backoff exponentiel', async () => {
     const sleepDurations: number[] = [];
-    const originalSetTimeout = globalThis.setTimeout;
 
     // On intercepte les setTimeout pour capturer les durées
-    vi.spyOn(globalThis, 'setTimeout').mockImplementation((cb: (...args: unknown[]) => void, ms?: number) => {
-      sleepDurations.push(ms ?? 0);
-      // Exécuter le callback immédiatement
-      cb();
-      return 0 as unknown as ReturnType<typeof setTimeout>;
-    });
+    vi.spyOn(globalThis, 'setTimeout').mockImplementation(
+      (cb: (...args: unknown[]) => void, ms?: number) => {
+        sleepDurations.push(ms ?? 0);
+        // Exécuter le callback immédiatement
+        cb();
+        return 0 as unknown as ReturnType<typeof setTimeout>;
+      },
+    );
 
     let call = 0;
     const fn = vi.fn().mockImplementation(() => {
@@ -147,19 +148,21 @@ describe('poll()', () => {
 
     // 3 sleeps (avant les appels 2, 3, 4)
     expect(sleepDurations.length).toBe(3);
-    expect(sleepDurations[0]).toBe(100);   // 100
-    expect(sleepDurations[1]).toBe(200);   // 100 * 2
-    expect(sleepDurations[2]).toBe(400);   // 200 * 2
+    expect(sleepDurations[0]).toBe(100); // 100
+    expect(sleepDurations[1]).toBe(200); // 100 * 2
+    expect(sleepDurations[2]).toBe(400); // 200 * 2
   });
 
   it('respecte maxInterval', async () => {
     const sleepDurations: number[] = [];
 
-    vi.spyOn(globalThis, 'setTimeout').mockImplementation((cb: (...args: unknown[]) => void, ms?: number) => {
-      sleepDurations.push(ms ?? 0);
-      cb();
-      return 0 as unknown as ReturnType<typeof setTimeout>;
-    });
+    vi.spyOn(globalThis, 'setTimeout').mockImplementation(
+      (cb: (...args: unknown[]) => void, ms?: number) => {
+        sleepDurations.push(ms ?? 0);
+        cb();
+        return 0 as unknown as ReturnType<typeof setTimeout>;
+      },
+    );
 
     let call = 0;
     const fn = vi.fn().mockImplementation(() => {

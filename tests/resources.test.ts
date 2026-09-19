@@ -114,11 +114,7 @@ describe('PreRecordedResource', () => {
     const resource = new PreRecordedResource(http);
     const result = await resource.list({ limit: 5, offset: 10 });
 
-    expect(http.get).toHaveBeenCalledWith(
-      '/v2/pre-recorded',
-      { limit: 5, offset: 10 },
-      undefined,
-    );
+    expect(http.get).toHaveBeenCalledWith('/v2/pre-recorded', { limit: 5, offset: 10 }, undefined);
     expect(result).toBe(expected);
   });
 
@@ -186,7 +182,11 @@ describe('PreRecordedResource', () => {
 describe('LiveResource', () => {
   it('init() POST /v2/live avec body et region', async () => {
     const http = createMockHttp();
-    const expected = { id: 'live-1', created_at: '2024-01-01', url: 'wss://api.gladia.io/v2/live?token=abc' };
+    const expected = {
+      id: 'live-1',
+      created_at: '2024-01-01',
+      url: 'wss://api.gladia.io/v2/live?token=abc',
+    };
     (http.post as ReturnType<typeof vi.fn>).mockResolvedValue(expected);
 
     const resource = new LiveResource(http);

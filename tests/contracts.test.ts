@@ -29,7 +29,14 @@ describe('official Gladia contracts', () => {
   });
 
   it('contains the WebSocket messages used by LiveSession', () => {
-    for (const type of ['stop_recording', 'transcript', 'speech_start', 'speech_end', 'start_session', 'end_session']) {
+    for (const type of [
+      'stop_recording',
+      'transcript',
+      'speech_start',
+      'speech_end',
+      'start_session',
+      'end_session',
+    ]) {
       expect(asyncapi).toContain(`type: ${type}`);
     }
   });

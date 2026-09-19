@@ -1,11 +1,12 @@
 // ── Client ───────────────────────────────────────────────
 export { GladiaClient } from './client.js';
+export { SDK_VERSION } from './version.js';
 export { GLADIA_OPENAPI_OPERATIONS } from './api-operations.js';
 
 // ── Resources ────────────────────────────────────────────
 export { UploadResource } from './resources/upload.js';
 export { PreRecordedResource } from './resources/pre-recorded.js';
-export type { TranscribeOptions } from './resources/pre-recorded.js';
+export type { TranscribeOptions, PollTranscriptionOptions } from './resources/pre-recorded.js';
 export { LiveResource } from './resources/live.js';
 export type { LiveStreamOptions } from './resources/live.js';
 export { TranscriptionResource } from './resources/transcription.js';
@@ -38,6 +39,9 @@ export type {
   LivePostChapterizationMessage,
   LiveLifecycleMessage,
   LiveOpenEvent,
+  LiveConnectionEvent,
+  LiveEndingEvent,
+  LiveSessionStatus,
   LiveAcknowledgmentMessage,
   LiveErrorMessage,
 } from './live/events.js';

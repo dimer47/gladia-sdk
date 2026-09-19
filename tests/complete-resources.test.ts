@@ -47,8 +47,18 @@ describe('complete OpenAPI resources', () => {
     const legacy = new LegacyResource(http);
     await legacy.audioToText({ audio_url: 'https://example.com/a.mp3' });
     await legacy.videoToText({ video_url: 'https://example.com/v.mp4' });
-    expect(http.postFormVoid).toHaveBeenNthCalledWith(1, '/audio/text/audio-transcription', expect.any(FormData), undefined);
-    expect(http.postFormVoid).toHaveBeenNthCalledWith(2, '/video/text/video-transcription', expect.any(FormData), undefined);
+    expect(http.postFormVoid).toHaveBeenNthCalledWith(
+      1,
+      '/audio/text/audio-transcription',
+      expect.any(FormData),
+      undefined,
+    );
+    expect(http.postFormVoid).toHaveBeenNthCalledWith(
+      2,
+      '/video/text/video-transcription',
+      expect.any(FormData),
+      undefined,
+    );
   });
 
   it('covers PATCH /v2/live/{id}', async () => {

@@ -3,6 +3,7 @@ import type { PaginationParams, PaginatedResponse } from '../types/common.js';
 import type { LiveRequest, LiveCreatedResponse, LiveResponse, LiveRegion } from '../types/live.js';
 import type { PatchLiveRequest } from '../types/live.js';
 import { LiveSession } from '../live/session.js';
+import type { WebSocketRetryConfig } from '../types/common.js';
 
 export interface LiveStreamOptions extends LiveRequest {
   region?: LiveRegion;
@@ -13,12 +14,17 @@ export interface LiveStreamOptions extends LiveRequest {
 
 export class LiveResource {
   private readonly WebSocketCtor?: unknown;
+  private readonly defaultRegion?: LiveRegion;
+  private readonly retry?: Partial<WebSocketRetryConfig>;
 
   constructor(
     private readonly http: HttpClient,
     WebSocketCtor?: unknown,
+    options: { region?: LiveRegion; retry?: Partial<WebSocketRetryConfig> } = {},
   ) {
     this.WebSocketCtor = WebSocketCtor;
+    this.defaultRegion = options.region;
+    this.retry = options.retry;
   }
 
   /**
@@ -29,8 +35,9 @@ export class LiveResource {
     options?: { region?: LiveRegion; signal?: AbortSignal },
   ): Promise<LiveCreatedResponse> {
     const query: Record<string, unknown> = {};
-    if (options?.region) {
-      query['region'] = options.region;
+    const region = options?.region ?? this.defaultRegion;
+    if (region) {
+      query['region'] = region;
     }
     return this.http.post<LiveCreatedResponse>(
       `/v2/live${buildQuery(query)}`,
@@ -84,14 +91,20 @@ export class LiveResource {
    */
   async stream(options?: LiveStreamOptions): Promise<LiveSession> {
     const { region, WebSocket: wsCtor, signal, ...request } = options ?? {};
+    const emitAcknowledgments = request.messages_config?.receive_acknowledgments ?? false;
 
-    const created = await this.init(request, { region, signal });
+    const messages_config = {
+      ...request.messages_config,
+      receive_acknowledgments: true,
+    };
+    const created = await this.init({ ...request, messages_config }, { region, signal });
 
     return new Promise<LiveSession>((resolve, reject) => {
-      const session = new LiveSession(
-        created.url,
-        wsCtor ?? this.WebSocketCtor,
-      );
+      const session = new LiveSession(created.url, wsCtor ?? this.WebSocketCtor, this.retry, {
+        signal,
+        emitAcknowledgments,
+        sessionId: created.id,
+      });
 
       const onOpen = () => {
         session.off('open', onOpen);
@@ -107,6 +120,7 @@ export class LiveResource {
 
       session.on('open', onOpen);
       session.on('error', onError);
+      if (signal?.aborted) onError({ message: 'Live session aborted' });
     });
   }
 }

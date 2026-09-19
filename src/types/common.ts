@@ -26,8 +26,30 @@ export interface FileResponse {
 }
 
 export interface GladiaClientConfig {
-  apiKey: string;
+  /** Defaults to GLADIA_API_KEY when available. Optional for a custom proxy URL. */
+  apiKey?: string;
   baseUrl?: string;
+  /** Alias for baseUrl. Defaults to GLADIA_API_URL then https://api.gladia.io. */
+  apiUrl?: string;
+  region?: 'us-west' | 'eu-west';
+  headers?: Record<string, string>;
+  httpTimeout?: number;
+  httpRetry?: Partial<HttpRetryConfig>;
+  websocketRetry?: Partial<WebSocketRetryConfig>;
   /** Custom WebSocket constructor (for Node < 21, pass `ws`) */
   WebSocket?: unknown;
+}
+
+export interface HttpRetryConfig {
+  maxAttempts: number;
+  statusCodes: (number | readonly [number, number])[];
+  delay: (attempt: number) => number;
+}
+
+export interface WebSocketRetryConfig {
+  maxAttempts: number;
+  delay: (attempt: number) => number;
+  closeCodes: (number | readonly [number, number])[];
+  /** Maximum time allowed for each WebSocket connection attempt. */
+  timeout: number;
 }

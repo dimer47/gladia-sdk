@@ -9,10 +9,16 @@ export class TranscriptionResource {
   create(request: PreRecordedRequest, signal?: AbortSignal): Promise<PreRecordedCreatedResponse> {
     return this.http.post('/v2/transcription', request, signal);
   }
-  list(params?: TranscriptionPaginationParams, signal?: AbortSignal): Promise<S['ListTranscriptionResponse']> {
+  list(
+    params?: TranscriptionPaginationParams,
+    signal?: AbortSignal,
+  ): Promise<S['ListTranscriptionResponse']> {
     return this.http.get('/v2/transcription', params as Record<string, unknown>, signal);
   }
-  get(id: string, signal?: AbortSignal): Promise<S['PreRecordedResponse'] | S['StreamingResponse']> {
+  get(
+    id: string,
+    signal?: AbortSignal,
+  ): Promise<S['PreRecordedResponse'] | S['StreamingResponse']> {
     return this.http.get(`/v2/transcription/${id}`, undefined, signal);
   }
   delete(id: string, signal?: AbortSignal): Promise<void> {

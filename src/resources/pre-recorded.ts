@@ -6,12 +6,19 @@ import type {
   PreRecordedResponse,
 } from '../types/pre-recorded.js';
 import { poll, isTerminalStatus } from '../utils/polling.js';
+import { UploadResource } from './upload.js';
 
 export interface TranscribeOptions extends PreRecordedRequest {
   /** Called on each poll with the current response */
   onPoll?: (response: PreRecordedResponse) => void;
   /** Maximum polling time in ms */
   pollTimeout?: number;
+  signal?: AbortSignal;
+}
+
+export interface PollTranscriptionOptions {
+  onPoll?: (response: PreRecordedResponse) => void;
+  timeout?: number | null;
   signal?: AbortSignal;
 }
 
@@ -71,12 +78,43 @@ export class PreRecordedResource {
 
     const created = await this.create(request, signal);
 
-    return poll<PreRecordedResponse>({
-      fn: () => this.get(created.id, signal),
-      isDone: (res) => isTerminalStatus(res.status),
-      onPoll,
-      timeout: pollTimeout,
-      signal,
+    return this.poll(created.id, { onPoll, timeout: pollTimeout, signal });
+  }
+
+  /** Upload a local source when needed, then create and poll the transcription. */
+  async transcribeSource(
+    source: string | Blob | Uint8Array,
+    request: Omit<PreRecordedRequest, 'audio_url'> = {},
+    options: PollTranscriptionOptions = {},
+  ): Promise<PreRecordedResponse> {
+    const isUrl = typeof source === 'string' && /^https?:\/\//i.test(source);
+    const audioUrl = isUrl
+      ? (source as string)
+      : (await new UploadResource(this.http).fromFile(source, 'audio', options.signal)).audio_url;
+    return this.createAndPoll({ ...request, audio_url: audioUrl }, options);
+  }
+
+  async createAndPoll(
+    request: PreRecordedRequest,
+    options: PollTranscriptionOptions = {},
+  ): Promise<PreRecordedResponse> {
+    const created = await this.create(request, options.signal);
+    return this.poll(created.id, options);
+  }
+
+  async poll(id: string, options: PollTranscriptionOptions = {}): Promise<PreRecordedResponse> {
+    const result = await poll<PreRecordedResponse>({
+      fn: () => this.get(id, options.signal),
+      isDone: (response) => isTerminalStatus(response.status),
+      onPoll: options.onPoll,
+      timeout: options.timeout === null ? undefined : (options.timeout ?? 7_200_000),
+      signal: options.signal,
     });
+    if (result.status === 'error') {
+      throw new Error(
+        `Pre-recorded job ${id} failed with error code: ${result.error_code ?? 'unknown'}`,
+      );
+    }
+    return result;
   }
 }

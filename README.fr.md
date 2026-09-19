@@ -18,7 +18,7 @@
 - 🏷️ **100% typé** — interfaces TypeScript pour les 54 schemas de l'API
 - ⚡ **Dual ESM + CJS** — compatible avec tous les bundlers et runtimes
 - 🪶 **0 dépendance** — uniquement `fetch` et `WebSocket` natifs
-- 🧪 **91 tests unitaires** — couverture complète sans clé API requise
+- 🧪 **Tests unitaires, contractuels, packaging et E2E optionnels** — sans clé API par défaut
 
 ## 📍 Install
 
@@ -42,10 +42,33 @@ import { GladiaClient } from '@dimer47/gladia-sdk';
 const gladia = new GladiaClient({ apiKey: 'gla_xxx' });
 ```
 
+Il est aussi possible de définir `GLADIA_API_KEY` puis d’appeler `new GladiaClient()` sans
+argument. `GLADIA_API_URL` et `GLADIA_REGION` sont également pris en charge.
+
 Le client expose toutes les opérations du contrat OpenAPI publié par Gladia via
 `upload`, `preRecorded`, `live`, `transcription`, `history`, `models` et `legacy`.
 Les routes dépréciées restent accessibles sous `transcription` et `legacy` afin de
 garantir une couverture complète du contrat.
+
+### Comparaison avec le SDK officiel `@gladiaio/sdk`
+
+| Capacité                                                       |             Ce SDK |               SDK officiel |
+| -------------------------------------------------------------- | -----------------: | -------------------------: |
+| Types générés depuis l’OpenAPI Gladia                          | ✅ Contrat complet |   ✅ Live + pré-enregistré |
+| Toutes les opérations REST publiées                            |                 ✅ |         Surface produit V2 |
+| Retries et timeouts HTTP                                       |                 ✅ |                         ✅ |
+| Protection des identifiants lors des redirections cross-origin |                 ✅ |                         ✅ |
+| Reconnexion WebSocket et renvoi de l’audio non acquitté        |                 ✅ |                         ✅ |
+| Audio Live binaire et JSON/base64                              |                 ✅ |              Audio binaire |
+| Variables d’environnement et mode proxy                        |                 ✅ |                         ✅ |
+| Chemins locaux, URL, Blob et tableaux typés                    |                 ✅ | Chemins, URL, File et Blob |
+| Événements de commodité typés                                  |                 ✅ |   Événement générique typé |
+| Tests d’intégration réels optionnels                           |                 ✅ |                         ✅ |
+
+Le SDK officiel reste la référence de compatibilité. Ce package expose en plus
+les opérations dépréciées et auxiliaires encore présentes dans l’OpenAPI Gladia.
+Les limites des schémas officiels incomplets sont consignées dans
+[docs/OPENAPI-LIMITATIONS.md](docs/OPENAPI-LIMITATIONS.md), sans inventer de modèles non documentés.
 
 ## 🕹️ Usage
 
@@ -128,6 +151,9 @@ session.on('transcript:partial', (msg) => {
 // 🎤 Envoyer des chunks audio
 session.sendAudio(audioChunk); // ArrayBuffer | Uint8Array | Blob
 
+session.on('connected', ({ attempt }) => console.log(`Connecté (tentative ${attempt})`));
+console.log(session.status);
+
 // ⏹️ Arrêter et attendre la fin du traitement
 await session.stop();
 ```
@@ -151,23 +177,23 @@ await gladia.live.delete('session-id');
 
 ## 📦 Addons disponibles
 
-| Addon | Champ | Config |
-|-------|-------|--------|
-| 🗣️ Diarisation | `diarization` | `diarization_config` |
-| 🌍 Traduction | `translation` | `translation_config` |
-| 📝 Résumé | `summarization` | `summarization_config` |
-| 💬 Analyse de sentiments | `sentiment_analysis` | — |
-| 🏷️ Entités nommées (NER) | `named_entity_recognition` | — |
-| 📑 Chapitrage | `chapterization` | — |
-| 🔒 PII Redaction | `pii_redaction` | `pii_redaction_config` |
-| 📺 Sous-titres | `subtitles` | `subtitles_config` |
-| 🤖 Audio to LLM | `audio_to_llm` | `audio_to_llm_config` |
-| ✏️ Custom Spelling | `custom_spelling` | `custom_spelling_config` |
+| Addon                    | Champ                        | Config                              |
+| ------------------------ | ---------------------------- | ----------------------------------- |
+| 🗣️ Diarisation           | `diarization`                | `diarization_config`                |
+| 🌍 Traduction            | `translation`                | `translation_config`                |
+| 📝 Résumé                | `summarization`              | `summarization_config`              |
+| 💬 Analyse de sentiments | `sentiment_analysis`         | —                                   |
+| 🏷️ Entités nommées (NER) | `named_entity_recognition`   | —                                   |
+| 📑 Chapitrage            | `chapterization`             | —                                   |
+| 🔒 PII Redaction         | `pii_redaction`              | `pii_redaction_config`              |
+| 📺 Sous-titres           | `subtitles`                  | `subtitles_config`                  |
+| 🤖 Audio to LLM          | `audio_to_llm`               | `audio_to_llm_config`               |
+| ✏️ Custom Spelling       | `custom_spelling`            | `custom_spelling_config`            |
 | 📊 Extraction structurée | `structured_data_extraction` | `structured_data_extraction_config` |
-| 🔤 Custom Vocabulary | `custom_vocabulary` | `custom_vocabulary_config` |
-| 🧑 Name Consistency | `name_consistency` | — |
-| 🖥️ Display Mode | `display_mode` | — |
-| 🚫 Modération | `moderation` | — |
+| 🔤 Custom Vocabulary     | `custom_vocabulary`          | `custom_vocabulary_config`          |
+| 🧑 Name Consistency      | `name_consistency`           | —                                   |
+| 🖥️ Display Mode          | `display_mode`               | —                                   |
+| 🚫 Modération            | `moderation`                 | —                                   |
 
 ## 🧮 API Reference
 
@@ -177,72 +203,72 @@ await gladia.live.delete('session-id');
 new GladiaClient(config: GladiaClientConfig)
 ```
 
-| Paramètre | Type | Description |
-|-----------|------|-------------|
-| `apiKey` | `string` | 🔑 Clé API Gladia (obligatoire) |
-| `baseUrl` | `string?` | URL de base (défaut: `https://api.gladia.io`) |
+| Paramètre   | Type       | Description                                                 |
+| ----------- | ---------- | ----------------------------------------------------------- |
+| `apiKey`    | `string`   | 🔑 Clé API Gladia (obligatoire)                             |
+| `baseUrl`   | `string?`  | URL de base (défaut: `https://api.gladia.io`)               |
 | `WebSocket` | `unknown?` | Constructeur WebSocket custom (pour Node < 21, passer `ws`) |
 
 ---
 
 ### `gladia.upload`
 
-| Méthode | Description |
-|---------|-------------|
-| `fromFile(blob, filename?, signal?)` | 📤 Upload un fichier (multipart) |
-| `fromUrl(url, signal?)` | 🔗 Upload depuis une URL distante |
+| Méthode                              | Description                       |
+| ------------------------------------ | --------------------------------- |
+| `fromFile(blob, filename?, signal?)` | 📤 Upload un fichier (multipart)  |
+| `fromUrl(url, signal?)`              | 🔗 Upload depuis une URL distante |
 
 ---
 
 ### `gladia.preRecorded`
 
-| Méthode | Description |
-|---------|-------------|
-| `transcribe(options)` | ✅ POST + polling auto jusqu'à complétion |
-| `create(request, signal?)` | 📝 Créer un job de transcription |
-| `get(id, signal?)` | 🔍 Récupérer un job par ID |
-| `list(params?, signal?)` | 📋 Lister les jobs (paginé) |
-| `delete(id, signal?)` | 🗑️ Supprimer un job |
-| `getFile(id, signal?)` | 💾 Télécharger le fichier audio original |
+| Méthode                    | Description                               |
+| -------------------------- | ----------------------------------------- |
+| `transcribe(options)`      | ✅ POST + polling auto jusqu'à complétion |
+| `create(request, signal?)` | 📝 Créer un job de transcription          |
+| `get(id, signal?)`         | 🔍 Récupérer un job par ID                |
+| `list(params?, signal?)`   | 📋 Lister les jobs (paginé)               |
+| `delete(id, signal?)`      | 🗑️ Supprimer un job                       |
+| `getFile(id, signal?)`     | 💾 Télécharger le fichier audio original  |
 
 ---
 
 ### `gladia.live`
 
-| Méthode | Description |
-|---------|-------------|
-| `stream(options?)` | 🔴 Init + ouverture WebSocket → `LiveSession` |
-| `init(request?, options?)` | 🔧 Init session (retourne l'URL WebSocket) |
-| `get(id, signal?)` | 🔍 Récupérer une session par ID |
-| `list(params?, signal?)` | 📋 Lister les sessions (paginé) |
-| `delete(id, signal?)` | 🗑️ Supprimer une session |
-| `getFile(id, signal?)` | 💾 Télécharger l'enregistrement audio |
+| Méthode                    | Description                                   |
+| -------------------------- | --------------------------------------------- |
+| `stream(options?)`         | 🔴 Init + ouverture WebSocket → `LiveSession` |
+| `init(request?, options?)` | 🔧 Init session (retourne l'URL WebSocket)    |
+| `get(id, signal?)`         | 🔍 Récupérer une session par ID               |
+| `list(params?, signal?)`   | 📋 Lister les sessions (paginé)               |
+| `delete(id, signal?)`      | 🗑️ Supprimer une session                      |
+| `getFile(id, signal?)`     | 💾 Télécharger l'enregistrement audio         |
 
 ---
 
 ### `LiveSession`
 
-| Méthode / Propriété | Description |
-|---------------------|-------------|
-| `on(event, listener)` | 👂 Écouter un événement typé |
-| `off(event, listener)` | 🔇 Retirer un listener |
-| `sendAudio(data)` | 🎤 Envoyer un chunk audio |
+| Méthode / Propriété      | Description                                         |
+| ------------------------ | --------------------------------------------------- |
+| `on(event, listener)`    | 👂 Écouter un événement typé                        |
+| `off(event, listener)`   | 🔇 Retirer un listener                              |
+| `sendAudio(data)`        | 🎤 Envoyer un chunk audio                           |
 | `sendAudioBase64(chunk)` | 🎤 Envoyer l'action audio JSON/base64 de l'AsyncAPI |
-| `stop()` | ⏹️ Signaler la fin et attendre le traitement |
-| `closed` | `boolean` — état du WebSocket |
+| `stop()`                 | ⏹️ Signaler la fin et attendre le traitement        |
+| `closed`                 | `boolean` — état du WebSocket                       |
 
 #### 📡 Événements disponibles
 
-| Événement | Type | Description |
-|-----------|------|-------------|
-| `transcript:final` | `LiveTranscriptMessage` | Transcription finale d'un énoncé |
-| `transcript:partial` | `LiveTranscriptMessage` | Transcription partielle en cours |
-| `speech_start` / `speech_end` | `LiveSpeechMessage` | Activité vocale détectée |
-| `start_session` / `end_session` | `LiveLifecycleMessage` | Cycle de vie de la session Gladia |
-| `translation`, `named_entity_recognition`, `sentiment_analysis` | Messages d'add-on typés | Résultats en temps réel |
-| `post_transcript`, `post_final_transcript`, `post_summarization`, `post_chapterization` | Messages de post-traitement typés | Résultats du post-traitement |
-| `error` | `LiveErrorMessage` | Erreur WebSocket |
-| `message` | `LiveBaseMessage` | Tout message brut (catch-all) |
+| Événement                                                                               | Type                              | Description                       |
+| --------------------------------------------------------------------------------------- | --------------------------------- | --------------------------------- |
+| `transcript:final`                                                                      | `LiveTranscriptMessage`           | Transcription finale d'un énoncé  |
+| `transcript:partial`                                                                    | `LiveTranscriptMessage`           | Transcription partielle en cours  |
+| `speech_start` / `speech_end`                                                           | `LiveSpeechMessage`               | Activité vocale détectée          |
+| `start_session` / `end_session`                                                         | `LiveLifecycleMessage`            | Cycle de vie de la session Gladia |
+| `translation`, `named_entity_recognition`, `sentiment_analysis`                         | Messages d'add-on typés           | Résultats en temps réel           |
+| `post_transcript`, `post_final_transcript`, `post_summarization`, `post_chapterization` | Messages de post-traitement typés | Résultats du post-traitement      |
+| `error`                                                                                 | `LiveErrorMessage`                | Erreur WebSocket                  |
+| `message`                                                                               | `LiveBaseMessage`                 | Tout message brut (catch-all)     |
 
 ## ⚠️ Gestion des erreurs
 
@@ -298,11 +324,36 @@ const gladia = new GladiaClient({
 ## 🧪 Tests
 
 ```bash
-npm test          # Exécuter les 91 tests
+npm test            # Suite locale, sans appel réel
 npm run test:watch  # Mode watch
 ```
 
 Les tests utilisent des mocks (`fetch`, `WebSocket`) — **aucune clé API nécessaire**.
+
+Le test complet sur un vrai fichier est volontairement optionnel :
+
+```bash
+GLADIA_API_KEY=gla_xxx \
+GLADIA_E2E_AUDIO_FILE=/chemin/absolu/audio-original.m4a \
+GLADIA_E2E_LIVE_AUDIO_FILE=/chemin/absolu/audio-16khz-mono.wav \
+npm run test:e2e
+```
+
+Pour une exécution manuelle interactive avec conservation locale des résultats, placez vos fichiers
+privés comme indiqué dans `test-assets/README.md`, puis lancez :
+
+```bash
+read -s "GLADIA_API_KEY?Clé Gladia : "
+echo
+export GLADIA_API_KEY
+npm run manual:e2e
+unset GLADIA_API_KEY
+```
+
+Il est aussi possible de fournir des fichiers situés ailleurs avec
+`--prerecorded /chemin/audio.m4a` et `--live /chemin/audio.wav`. Les audios, transcriptions,
+résultats API et identifiants ne doivent jamais être commités ; Git ignore le contenu de
+`test-assets/`.
 
 ## 🏗️ Build
 

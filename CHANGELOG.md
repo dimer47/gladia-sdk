@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.1.0
+
+- Protect API credentials across cross-origin redirects and add configurable HTTP retries/timeouts.
+- Add WebSocket reconnection, audio buffering, acknowledgment-based replay, and `once()` listeners.
+- Add environment configuration, proxy mode, local file paths, polling helpers, and opt-in E2E tests.
+- Add a public Live state machine, full-lifecycle cancellation, Base64 replay, and internal ACK filtering.
+- Synchronize the SDK header version from package metadata and validate ESM, CJS, browser, and npm package output.
+- Add linting, formatting, a Node 18/20/22 CI matrix, migration notes, and a complete opt-in real-file E2E workflow.
+
 ## 2.0.0
 
 - Generate the complete public TypeScript contract directly from Gladia's OpenAPI document.

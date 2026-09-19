@@ -8,6 +8,28 @@ on:
 
 jobs:
   test:
+    name: Node ${{ matrix.node-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [18, 20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+      - run: npm ci
+      # Vitest 4 requires Node 20+, while the built SDK itself supports Node 18.
+      - if: matrix.node-version != 18
+        run: npm test
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm run check:package
+
+  quality:
+    name: Contracts, lint, format, security
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,7 +38,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm test
-      - run: npm run typecheck
-      - run: npm run build
       - run: npm run check:contracts
+      - run: npm run check:version
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm audit --audit-level=moderate

@@ -14,52 +14,67 @@ export interface ApiErrorBody {
   validation_errors?: string[];
 }
 
+export interface ApiErrorContext {
+  method?: string;
+  url?: string;
+  requestId?: string;
+  responseHeaders?: Record<string, string>;
+}
+
 export class GladiaApiError extends GladiaError {
   readonly status: number;
   readonly body: ApiErrorBody;
+  readonly method?: string;
+  readonly url?: string;
+  readonly requestId?: string;
+  readonly responseHeaders?: Record<string, string>;
 
-  constructor(status: number, body: ApiErrorBody) {
+  constructor(status: number, body: ApiErrorBody, context: ApiErrorContext = {}) {
     super(body.message ?? `API error ${status}`);
     this.name = 'GladiaApiError';
     this.status = status;
     this.body = body;
+    this.method = context.method;
+    this.url = context.url;
+    this.requestId = context.requestId ?? body.request_id;
+    this.responseHeaders = context.responseHeaders;
   }
 }
 
 export class BadRequestError extends GladiaApiError {
   readonly validationErrors: string[];
 
-  constructor(body: ApiErrorBody) {
-    super(400, body);
+  constructor(body: ApiErrorBody, context?: ApiErrorContext) {
+    super(400, body, context);
     this.name = 'BadRequestError';
     this.validationErrors = body.validation_errors ?? [];
   }
 }
 
 export class UnauthorizedError extends GladiaApiError {
-  constructor(body: ApiErrorBody) {
-    super(401, body);
+  constructor(body: ApiErrorBody, context?: ApiErrorContext) {
+    super(401, body, context);
     this.name = 'UnauthorizedError';
   }
 }
 
 export class ForbiddenError extends GladiaApiError {
-  constructor(body: ApiErrorBody) {
-    super(403, body);
+  constructor(body: ApiErrorBody, context?: ApiErrorContext) {
+    super(403, body, context);
     this.name = 'ForbiddenError';
   }
 }
 
 export class NotFoundError extends GladiaApiError {
-  constructor(body: ApiErrorBody) {
-    super(404, body);
+  constructor(body: ApiErrorBody, context?: ApiErrorContext) {
+    super(404, body, context);
     this.name = 'NotFoundError';
   }
 }
 
 export class UnprocessableEntityError extends GladiaApiError {
-  constructor(body: ApiErrorBody) {
-    super(422, body);
+  constructor(body: ApiErrorBody, context?: ApiErrorContext) {
+    super(422, body, context);
     this.name = 'UnprocessableEntityError';
   }
 }

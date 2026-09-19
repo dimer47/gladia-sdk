@@ -190,12 +190,15 @@ describe('HttpClient', () => {
     });
 
     it('gère un body non-JSON en erreur', async () => {
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-        ok: false,
-        status: 500,
-        statusText: 'Internal Server Error',
-        json: () => Promise.reject(new Error('not json')),
-      }));
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: false,
+          status: 500,
+          statusText: 'Internal Server Error',
+          json: () => Promise.reject(new Error('not json')),
+        }),
+      );
 
       try {
         await client.get('/fail');
@@ -230,6 +233,52 @@ describe('HttpClient', () => {
       await c.get('/v2/test');
 
       expect(fetch.mock.calls[0][0]).toBe('https://api.example.com/v2/test');
+    });
+  });
+
+  describe('résilience réseau', () => {
+    it('retire la clé API lors d’une redirection cross-origin', async () => {
+      const fetch = vi
+        .fn()
+        .mockResolvedValueOnce(
+          new Response(null, {
+            status: 302,
+            headers: { location: 'https://files.example.com/audio' },
+          }),
+        )
+        .mockResolvedValueOnce(new Response('audio', { status: 200 }));
+      vi.stubGlobal('fetch', fetch);
+
+      await client.getBlob('/v2/pre-recorded/id/file');
+
+      expect(fetch.mock.calls[0][1].headers['x-gladia-key']).toBe('test-key');
+      expect(fetch.mock.calls[1][1].headers['x-gladia-key']).toBeUndefined();
+    });
+
+    it('réessaie les erreurs temporaires', async () => {
+      const fetch = vi
+        .fn()
+        .mockResolvedValueOnce(
+          new Response('{"message":"busy"}', {
+            status: 503,
+            headers: { 'content-type': 'application/json' },
+          }),
+        )
+        .mockResolvedValueOnce(
+          new Response('{"ok":true}', {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          }),
+        );
+      vi.stubGlobal('fetch', fetch);
+      const resilient = new HttpClient({
+        apiKey: 'key',
+        baseUrl: 'https://api.example.com',
+        retry: { delay: () => 0 },
+      });
+
+      await expect(resilient.get('/test')).resolves.toEqual({ ok: true });
+      expect(fetch).toHaveBeenCalledTimes(2);
     });
   });
 });
