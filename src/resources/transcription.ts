@@ -2,12 +2,13 @@ import type { HttpClient } from '../http.js';
 import type { components } from '../generated/openapi.js';
 import type { PreRecordedRequest, PreRecordedCreatedResponse } from '../types/pre-recorded.js';
 import type { TranscriptionPaginationParams } from '../types/operations.js';
+import { normalizePreRecordedRequest } from '../utils/pii.js';
 
 type S = components['schemas'];
 export class TranscriptionResource {
   constructor(private readonly http: HttpClient) {}
   create(request: PreRecordedRequest, signal?: AbortSignal): Promise<PreRecordedCreatedResponse> {
-    return this.http.post('/v2/transcription', request, signal);
+    return this.http.post('/v2/transcription', normalizePreRecordedRequest(request), signal);
   }
   list(
     params?: TranscriptionPaginationParams,

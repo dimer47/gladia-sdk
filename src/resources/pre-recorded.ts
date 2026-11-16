@@ -7,6 +7,7 @@ import type {
 } from '../types/pre-recorded.js';
 import { poll, isTerminalStatus } from '../utils/polling.js';
 import { UploadResource } from './upload.js';
+import { normalizePreRecordedRequest } from '../utils/pii.js';
 
 export interface TranscribeOptions extends PreRecordedRequest {
   /** Called on each poll with the current response */
@@ -32,7 +33,11 @@ export class PreRecordedResource {
     request: PreRecordedRequest,
     signal?: AbortSignal,
   ): Promise<PreRecordedCreatedResponse> {
-    return this.http.post<PreRecordedCreatedResponse>('/v2/pre-recorded', request, signal);
+    return this.http.post<PreRecordedCreatedResponse>(
+      '/v2/pre-recorded',
+      normalizePreRecordedRequest(request),
+      signal,
+    );
   }
 
   /**

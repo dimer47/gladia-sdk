@@ -11,7 +11,9 @@
   `post_chapterization` event) remain available as `@deprecated` and will be removed in v3.
   Use Audio to LLM instead.
 - Type `pii_redaction_config.entity_types` as an array of presets and entity types, matching
-  Gladia's corrected contract. A single value is still accepted but deprecated.
+  Gladia's corrected contract. Gladia rejects a single value with HTTP 400, which earlier SDK types
+  allowed: the SDK now wraps a single value in an array before sending it. Passing a single value
+  is deprecated.
 - Document Gladia's new `batch` default for `translation_config.model`.
 - Expose the new HTTP 400 response of the delete endpoints and the `error_code` field of
   not-found errors.

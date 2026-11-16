@@ -34,6 +34,22 @@ describe('complete OpenAPI resources', () => {
     expect(http.getBlob).toHaveBeenCalledWith('/v2/transcription/id/file', undefined);
   });
 
+  it('wraps a deprecated single PII entity type for unified transcriptions', async () => {
+    const http = mockHttp();
+    await new TranscriptionResource(http).create({
+      audio_url: 'https://example.com/a.mp3',
+      pii_redaction_config: { entity_types: 'HIPAA_SAFE_HARBOR' },
+    });
+    expect(http.post).toHaveBeenCalledWith(
+      '/v2/transcription',
+      {
+        audio_url: 'https://example.com/a.mp3',
+        pii_redaction_config: { entity_types: ['HIPAA_SAFE_HARBOR'] },
+      },
+      undefined,
+    );
+  });
+
   it('covers history and models', async () => {
     const http = mockHttp();
     await new HistoryResource(http).list({ limit: 5 });
