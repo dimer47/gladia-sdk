@@ -177,23 +177,22 @@ await gladia.live.delete('session-id');
 
 ## 📦 Addons disponibles
 
-| Addon                    | Champ                        | Config                              |
-| ------------------------ | ---------------------------- | ----------------------------------- |
-| 🗣️ Diarisation           | `diarization`                | `diarization_config`                |
-| 🌍 Traduction            | `translation`                | `translation_config`                |
-| 📝 Résumé                | `summarization`              | `summarization_config`              |
-| 💬 Analyse de sentiments | `sentiment_analysis`         | —                                   |
-| 🏷️ Entités nommées (NER) | `named_entity_recognition`   | —                                   |
-| 📑 Chapitrage            | `chapterization`             | —                                   |
-| 🔒 PII Redaction         | `pii_redaction`              | `pii_redaction_config`              |
-| 📺 Sous-titres           | `subtitles`                  | `subtitles_config`                  |
-| 🤖 Audio to LLM          | `audio_to_llm`               | `audio_to_llm_config`               |
-| ✏️ Custom Spelling       | `custom_spelling`            | `custom_spelling_config`            |
-| 📊 Extraction structurée | `structured_data_extraction` | `structured_data_extraction_config` |
-| 🔤 Custom Vocabulary     | `custom_vocabulary`          | `custom_vocabulary_config`          |
-| 🧑 Name Consistency      | `name_consistency`           | —                                   |
-| 🖥️ Display Mode          | `display_mode`               | —                                   |
-| 🚫 Modération            | `moderation`                 | —                                   |
+| Addon                    | Champ                      | Config                     |
+| ------------------------ | -------------------------- | -------------------------- |
+| 🗣️ Diarisation           | `diarization`              | `diarization_config`       |
+| 🌍 Traduction            | `translation`              | `translation_config`       |
+| 📝 Résumé                | `summarization`            | `summarization_config`     |
+| 💬 Analyse de sentiments | `sentiment_analysis`       | —                          |
+| 🏷️ Entités nommées (NER) | `named_entity_recognition` | —                          |
+| 🔒 PII Redaction         | `pii_redaction`            | `pii_redaction_config`     |
+| 📺 Sous-titres           | `subtitles`                | `subtitles_config`         |
+| 🤖 Audio to LLM          | `audio_to_llm`             | `audio_to_llm_config`      |
+| ✏️ Custom Spelling       | `custom_spelling`          | `custom_spelling_config`   |
+| 🔤 Custom Vocabulary     | `custom_vocabulary`        | `custom_vocabulary_config` |
+| 🧑 Name Consistency      | `name_consistency`         | —                          |
+| 🖥️ Display Mode          | `display_mode`             | —                          |
+
+> ⚠️ Gladia a retiré le **chapitrage**, la **modération** et l'**extraction structurée**. L'API accepte encore ces paramètres mais les ignore et ne renvoie plus de résultats. Leurs types restent disponibles dans le SDK, marqués `@deprecated`, et seront supprimés en v3. Utilisez [Audio to LLM](https://docs.gladia.io/chapters/audio-intelligence/audio-to-llm) à la place.
 
 ## 🧮 API Reference
 
@@ -259,16 +258,16 @@ new GladiaClient(config: GladiaClientConfig)
 
 #### 📡 Événements disponibles
 
-| Événement                                                                               | Type                              | Description                       |
-| --------------------------------------------------------------------------------------- | --------------------------------- | --------------------------------- |
-| `transcript:final`                                                                      | `LiveTranscriptMessage`           | Transcription finale d'un énoncé  |
-| `transcript:partial`                                                                    | `LiveTranscriptMessage`           | Transcription partielle en cours  |
-| `speech_start` / `speech_end`                                                           | `LiveSpeechMessage`               | Activité vocale détectée          |
-| `start_session` / `end_session`                                                         | `LiveLifecycleMessage`            | Cycle de vie de la session Gladia |
-| `translation`, `named_entity_recognition`, `sentiment_analysis`                         | Messages d'add-on typés           | Résultats en temps réel           |
-| `post_transcript`, `post_final_transcript`, `post_summarization`, `post_chapterization` | Messages de post-traitement typés | Résultats du post-traitement      |
-| `error`                                                                                 | `LiveErrorMessage`                | Erreur WebSocket                  |
-| `message`                                                                               | `LiveBaseMessage`                 | Tout message brut (catch-all)     |
+| Événement                                                        | Type                              | Description                       |
+| ---------------------------------------------------------------- | --------------------------------- | --------------------------------- |
+| `transcript:final`                                               | `LiveTranscriptMessage`           | Transcription finale d'un énoncé  |
+| `transcript:partial`                                             | `LiveTranscriptMessage`           | Transcription partielle en cours  |
+| `speech_start` / `speech_end`                                    | `LiveSpeechMessage`               | Activité vocale détectée          |
+| `start_session` / `end_session`                                  | `LiveLifecycleMessage`            | Cycle de vie de la session Gladia |
+| `translation`, `named_entity_recognition`, `sentiment_analysis`  | Messages d'add-on typés           | Résultats en temps réel           |
+| `post_transcript`, `post_final_transcript`, `post_summarization` | Messages de post-traitement typés | Résultats du post-traitement      |
+| `error`                                                          | `LiveErrorMessage`                | Erreur WebSocket                  |
+| `message`                                                        | `LiveBaseMessage`                 | Tout message brut (catch-all)     |
 
 ## ⚠️ Gestion des erreurs
 

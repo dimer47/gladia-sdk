@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { GLADIA_OPENAPI_OPERATIONS } from '../src/api-operations.js';
+import { applyOpenApiCompat } from '../scripts/openapi-compat.mjs';
 
 const openapi = JSON.parse(readFileSync('docs/openapi.json', 'utf8')) as {
   paths: Record<string, unknown>;
@@ -39,5 +40,26 @@ describe('official Gladia contracts', () => {
     ]) {
       expect(asyncapi).toContain(`type: ${type}`);
     }
+  });
+
+  it('keeps decommissioned add-ons as deprecated types without altering the vendored contract', () => {
+    type Schema = {
+      deprecated?: boolean;
+      properties?: Record<string, Schema & { oneOf?: unknown[] }>;
+    };
+    const vendored = openapi as unknown as { components: { schemas: Record<string, Schema> } };
+    const before = JSON.stringify(vendored);
+    const compat = applyOpenApiCompat(vendored) as typeof vendored;
+    const schemas = compat.components.schemas;
+
+    expect(JSON.stringify(vendored)).toBe(before);
+    expect(schemas.ModerationDTO.deprecated).toBe(true);
+    expect(schemas.StructuredDataExtractionDTO.deprecated).toBe(true);
+    expect(schemas.TranscriptionResultDTO.properties?.moderation.deprecated).toBe(true);
+    expect(schemas.TranscriptionResultDTO.properties?.structured_data_extraction.deprecated).toBe(
+      true,
+    );
+    expect(schemas.PostProcessingConfig.properties?.chapterization.deprecated).toBe(true);
+    expect(schemas.PiiRedactionConfigDTO.properties?.entity_types.oneOf).toHaveLength(2);
   });
 });

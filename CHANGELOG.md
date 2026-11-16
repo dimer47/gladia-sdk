@@ -1,5 +1,25 @@
 # Changelog
 
+## 2.2.0
+
+- Synchronize the vendored OpenAPI and AsyncAPI contracts with Gladia's current documents.
+- Deprecate chapterization, moderation and structured data extraction, which Gladia has decommissioned:
+  the API still accepts these parameters but ignores them and returns no results. Their types
+  (`PostProcessingConfig.chapterization`, `TranscriptionResult.moderation`,
+  `TranscriptionResult.structured_data_extraction`, `AddonGenericDTO`,
+  `StructuredDataExtractionDTO`, `LivePostChapterizationMessage`, `LiveChapter` and the
+  `post_chapterization` event) remain available as `@deprecated` and will be removed in v3.
+  Use Audio to LLM instead.
+- Type `pii_redaction_config.entity_types` as an array of presets and entity types, matching
+  Gladia's corrected contract. A single value is still accepted but deprecated.
+- Document Gladia's new `batch` default for `translation_config.model`.
+- Expose the new HTTP 400 response of the delete endpoints and the `error_code` field of
+  not-found errors.
+- Generate TypeScript types through `scripts/generate-openapi.mjs`, which applies the deprecated
+  compatibility layer without modifying the vendored contract.
+- Update development dependencies (vite, vitest, source-map-js, minimatch) to clear npm audit
+  advisories.
+
 ## 2.1.0
 
 - Protect API credentials across cross-origin redirects and add configurable HTTP retries/timeouts.

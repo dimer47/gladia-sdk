@@ -669,7 +669,7 @@ export interface components {
             target_languages: components["schemas"]["TranslationLanguageCodeEnum"][];
             /**
              * @description Model you want the translation model to use to translate
-             * @default base
+             * @default batch
              */
             model?: components["schemas"]["TranslationModelEnum"];
             /**
@@ -738,24 +738,32 @@ export interface components {
             model?: string;
         };
         /**
-         * @description The entity types to redact
+         * @description The presets and entity types to redact. When omitted or empty, the full default detection set is redacted. When non-empty, only the listed presets and entity types are redacted (not the default set plus these). Each preset covers different entity types: for instance `HEALTH_INFORMATION` only covers clinical content and does not redact names, contact details or SSN, which `HIPAA_SAFE_HARBOR` does. See https://docs.gladia.io/chapters/audio-intelligence/pii-redaction for the content of each preset.
          * @enum {string}
          */
         PiiRedactionEntityTypeEnum: "APPI" | "APPI_SENSITIVE" | "CCI" | "CORE_ENTITIES" | "CPRA" | "GDPR" | "GDPR_SENSITIVE" | "HEALTH_INFORMATION" | "HIPAA_SAFE_HARBOR" | "LIDI" | "NUMERICAL_EXCL_PCI" | "PCI" | "QUEBEC_PRIVACY_ACT" | "ACCOUNT_NUMBER" | "AGE" | "DATE" | "DATE_INTERVAL" | "DOB" | "DRIVER_LICENSE" | "DURATION" | "EMAIL_ADDRESS" | "EVENT" | "FILENAME" | "GENDER" | "HEALTHCARE_NUMBER" | "IP_ADDRESS" | "LANGUAGE" | "LOCATION" | "LOCATION_ADDRESS" | "LOCATION_ADDRESS_STREET" | "LOCATION_CITY" | "LOCATION_COORDINATE" | "LOCATION_COUNTRY" | "LOCATION_STATE" | "LOCATION_ZIP" | "MARITAL_STATUS" | "MONEY" | "NAME" | "NAME_FAMILY" | "NAME_GIVEN" | "NAME_MEDICAL_PROFESSIONAL" | "NUMERICAL_PII" | "OCCUPATION" | "ORGANIZATION" | "ORGANIZATION_MEDICAL_FACILITY" | "ORIGIN" | "PASSPORT_NUMBER" | "PASSWORD" | "PHONE_NUMBER" | "PHYSICAL_ATTRIBUTE" | "POLITICAL_AFFILIATION" | "RELIGION" | "SEXUALITY" | "SSN" | "TIME" | "URL" | "USERNAME" | "VEHICLE_ID" | "ZODIAC_SIGN" | "BLOOD_TYPE" | "CONDITION" | "DOSE" | "DRUG" | "INJURY" | "MEDICAL_PROCESS" | "STATISTICS" | "BANK_ACCOUNT" | "CREDIT_CARD" | "CREDIT_CARD_EXPIRATION" | "CVV" | "ROUTING_NUMBER" | "CORPORATE_ACTION" | "DAY" | "EFFECT" | "FINANCIAL_METRIC" | "MEDICAL_CODE" | "MONTH" | "ORGANIZATION_ID" | "PRODUCT" | "PROJECT" | "TREND" | "YEAR";
         PiiRedactionConfigDTO: {
             /**
-             * @description The entity types to redact
+             * @description The presets and entity types to redact. When omitted or empty, the full default detection set is redacted. When non-empty, only the listed presets and entity types are redacted (not the default set plus these). Each preset covers different entity types: for instance `HEALTH_INFORMATION` only covers clinical content and does not redact names, contact details or SSN, which `HIPAA_SAFE_HARBOR` does. See https://docs.gladia.io/chapters/audio-intelligence/pii-redaction for the content of each preset. Passing a single value instead of an array is deprecated.
              * @example [
-             *       "GDPR",
-             *       "HEALTH_INFORMATION",
+             *       "GDPR"
+             *     ]
+             * @example [
+             *       "HIPAA_SAFE_HARBOR"
+             *     ]
+             * @example [
              *       "HIPAA_SAFE_HARBOR",
-             *       "QUEBEC_PRIVACY_ACT",
+             *       "HEALTH_INFORMATION"
+             *     ]
+             * @example [
+             *       "GDPR"
+             *     ]
+             * @example [
              *       "EMAIL_ADDRESS",
-             *       "NAME",
              *       "PHONE_NUMBER"
              *     ]
              */
-            entity_types?: components["schemas"]["PiiRedactionEntityTypeEnum"];
+            entity_types?: components["schemas"]["PiiRedactionEntityTypeEnum"][] | components["schemas"]["PiiRedactionEntityTypeEnum"];
             /**
              * @description The type of processed text to return (marker or mask)
              * @example MARKER
@@ -1261,18 +1269,6 @@ export interface components {
             /** @description If `summarization` has been enabled, summary of the transcription */
             results: string | null;
         };
-        ModerationDTO: {
-            /** @description The audio intelligence model succeeded to get a valid output */
-            success: boolean;
-            /** @description The audio intelligence model returned an empty value */
-            is_empty: boolean;
-            /** @description Time audio intelligence model took to complete the task */
-            exec_time: number;
-            /** @description `null` if `success` is `true`. Contains the error details of the failed model */
-            error: components["schemas"]["AddonErrorDTO"] | null;
-            /** @description If `moderation` has been enabled, moderated transcription */
-            results: string | null;
-        };
         NamedEntityRecognitionResult: {
             entity_type: string;
             text: string;
@@ -1301,18 +1297,6 @@ export interface components {
             /** @description `null` if `success` is `true`. Contains the error details of the failed model */
             error: components["schemas"]["AddonErrorDTO"] | null;
             /** @description Deprecated, If `name_consistency` has been enabled, Gladia will improve the consistency of the names across the transcription */
-            results: string | null;
-        };
-        StructuredDataExtractionDTO: {
-            /** @description The audio intelligence model succeeded to get a valid output */
-            success: boolean;
-            /** @description The audio intelligence model returned an empty value */
-            is_empty: boolean;
-            /** @description Time audio intelligence model took to complete the task */
-            exec_time: number;
-            /** @description `null` if `success` is `true`. Contains the error details of the failed model */
-            error: components["schemas"]["AddonErrorDTO"] | null;
-            /** @description If `structured_data_extraction` has been enabled, results of the AI structured data extraction for the defined classes. */
             results: string | null;
         };
         SentimentAnalysisDTO: {
@@ -1390,14 +1374,10 @@ export interface components {
             translation?: components["schemas"]["TranslationDTO"];
             /** @description If `summarization` has been enabled, summarization of the audio speech transcription */
             summarization?: components["schemas"]["SummarizationDTO"];
-            /** @description If `moderation` has been enabled, moderation of the audio speech transcription */
-            moderation?: components["schemas"]["ModerationDTO"];
             /** @description If `named_entity_recognition` has been enabled, the detected entities */
             named_entity_recognition?: components["schemas"]["NamedEntityRecognitionDTO"];
             /** @description If `name_consistency` has been enabled, Gladia will improve consistency of the names accross the transcription */
             name_consistency?: components["schemas"]["NamesConsistencyDTO"];
-            /** @description If `structured_data_extraction` has been enabled, structured data extraction results */
-            structured_data_extraction?: components["schemas"]["StructuredDataExtractionDTO"];
             /** @description If `sentiment_analysis` has been enabled, sentiment analysis of the audio speech transcription */
             sentiment_analysis?: components["schemas"]["SentimentAnalysisDTO"];
             /** @description If `audio_to_llm` has been enabled, audio to llm results of the audio speech transcription */
@@ -1411,6 +1391,16 @@ export interface components {
             display_mode?: components["schemas"]["DisplayModeDTO"];
             /** @description If `diarization` has been requested and an error has occurred, the result will appear here */
             diarization?: components["schemas"]["DiarizationDTO"];
+            /**
+             * @deprecated
+             * @description Deprecated: Gladia decommissioned this add-on. The API ignores it and no longer returns results. Use Audio to LLM instead.
+             */
+            moderation?: components["schemas"]["ModerationDTO"];
+            /**
+             * @deprecated
+             * @description Deprecated: Gladia decommissioned this add-on. The API ignores it and no longer returns results. Use Audio to LLM instead.
+             */
+            structured_data_extraction?: components["schemas"]["StructuredDataExtractionDTO"];
         };
         PreRecordedResponse: {
             /**
@@ -1500,6 +1490,11 @@ export interface components {
              * @example Not found
              */
             message: string;
+            /**
+             * @description Stable code identifying the error, if any: `retention_period_expired` when the data retention period of the job has passed, `stored_file_not_found` when its audio or result was deleted before that, `zero_data_retention_enabled` when zero data retention is enabled and nothing was stored
+             * @example retention_period_expired
+             */
+            error_code?: string;
         };
         ListPreRecordedResponse: {
             /**
@@ -1693,7 +1688,8 @@ export interface components {
             /** @description Summarization configuration, if `summarization` is enabled */
             summarization_config?: components["schemas"]["SummarizationConfigDTO"];
             /**
-             * @description Deprecated: this parameter is ignored.
+             * @deprecated
+             * @description Deprecated: Gladia decommissioned this add-on. The API ignores it and no longer returns results. Use Audio to LLM instead.
              * @default false
              */
             chapterization?: boolean;
@@ -1830,7 +1826,7 @@ export interface components {
              */
             model?: components["schemas"]["StreamingSupportedModels"];
             /**
-             * @description The endpointing duration in seconds. Endpointing is the duration of silence which will cause an utterance to be considered as finished
+             * @description The endpointing duration in seconds. Endpointing is the duration of silence which will cause an utterance to be considered as finished. Only whole milliseconds are supported: the value is rounded to the nearest millisecond (e.g. 0.3825 becomes 0.383)
              * @default 0.05
              */
             endpointing?: number;
@@ -2749,7 +2745,7 @@ export interface components {
              */
             model?: components["schemas"]["StreamingSupportedModels"];
             /**
-             * @description The endpointing duration in seconds. Endpointing is the duration of silence which will cause an utterance to be considered as finished
+             * @description The endpointing duration in seconds. Endpointing is the duration of silence which will cause an utterance to be considered as finished. Only whole milliseconds are supported: the value is rounded to the nearest millisecond (e.g. 0.3825 becomes 0.383)
              * @default 0.05
              */
             endpointing?: number;
@@ -2910,6 +2906,38 @@ export interface components {
              */
             event: "live.end_session";
             payload: components["schemas"]["LiveEventPayload"];
+        };
+        /**
+         * @deprecated
+         * @description Deprecated: Gladia decommissioned this add-on. The API ignores it and no longer returns results. Use Audio to LLM instead.
+         */
+        ModerationDTO: {
+            /** @description The audio intelligence model succeeded to get a valid output */
+            success: boolean;
+            /** @description The audio intelligence model returned an empty value */
+            is_empty: boolean;
+            /** @description Time audio intelligence model took to complete the task */
+            exec_time: number;
+            /** @description `null` if `success` is `true`. Contains the error details of the failed model */
+            error: components["schemas"]["AddonErrorDTO"] | null;
+            /** @description If `moderation` has been enabled, moderated transcription */
+            results: string | null;
+        };
+        /**
+         * @deprecated
+         * @description Deprecated: Gladia decommissioned this add-on. The API ignores it and no longer returns results. Use Audio to LLM instead.
+         */
+        StructuredDataExtractionDTO: {
+            /** @description The audio intelligence model succeeded to get a valid output */
+            success: boolean;
+            /** @description The audio intelligence model returned an empty value */
+            is_empty: boolean;
+            /** @description Time audio intelligence model took to complete the task */
+            exec_time: number;
+            /** @description `null` if `success` is `true`. Contains the error details of the failed model */
+            error: components["schemas"]["AddonErrorDTO"] | null;
+            /** @description If `structured_data_extraction` has been enabled, results of the AI structured data extraction for the defined classes. */
+            results: string | null;
         };
     };
     responses: never;
@@ -3108,6 +3136,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description The pre recorded job id is not a UUID */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BadRequestErrorResponse"];
+                };
             };
             /** @description You don't have the permissions to delete this pre recorded job */
             401: {
@@ -3336,6 +3373,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description The transcription job id is not a UUID */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BadRequestErrorResponse"];
+                };
             };
             /** @description You don't have the permissions to delete this transcription job */
             401: {
@@ -3709,6 +3755,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description The live job id is not a UUID */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BadRequestErrorResponse"];
+                };
             };
             /** @description You don't have the permissions to delete this live job */
             401: {

@@ -1,6 +1,6 @@
 {
   "name": "@dimer47/gladia-sdk",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Handcrafted TypeScript SDK for the Gladia API — pre-recorded transcription & real-time live streaming via WebSocket",
   "type": "module",
   "publishConfig": {
@@ -44,7 +44,7 @@
     "write:version": "node scripts/write-version.mjs",
     "check:version": "node scripts/check-version.mjs",
     "build": "npm run write:version && tsup",
-    "generate:openapi": "openapi-typescript docs/openapi.json -o src/generated/openapi.ts --default-non-nullable false",
+    "generate:openapi": "node scripts/generate-openapi.mjs",
     "check:contracts": "node scripts/check-contracts.mjs",
     "check:package": "npm run build && node scripts/check-package.mjs",
     "lint": "eslint src tests scripts --max-warnings 0",
@@ -67,7 +67,7 @@
     "tsup": "^8.4.0",
     "typescript": "^5.7.0",
     "typescript-eslint": "^8.70.0",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.12"
   },
   "engines": {
     "node": ">=18"
