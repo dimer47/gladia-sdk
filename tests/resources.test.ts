@@ -94,6 +94,32 @@ describe('PreRecordedResource', () => {
     expect(result).toBe(expected);
   });
 
+  it('create() wraps a deprecated single PII entity type in an array', async () => {
+    const http = createMockHttp();
+    (http.post as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 'job-123' });
+
+    const resource = new PreRecordedResource(http);
+    await resource.create({
+      audio_url: 'https://a.mp3',
+      pii_redaction: true,
+      pii_redaction_config: { entity_types: 'GDPR', processed_text_type: 'MARKER' },
+    });
+    await resource.create({
+      audio_url: 'https://a.mp3',
+      pii_redaction_config: { entity_types: ['GDPR', 'NAME'] },
+    });
+
+    expect((http.post as ReturnType<typeof vi.fn>).mock.calls[0][1]).toEqual({
+      audio_url: 'https://a.mp3',
+      pii_redaction: true,
+      pii_redaction_config: { entity_types: ['GDPR'], processed_text_type: 'MARKER' },
+    });
+    expect((http.post as ReturnType<typeof vi.fn>).mock.calls[1][1]).toEqual({
+      audio_url: 'https://a.mp3',
+      pii_redaction_config: { entity_types: ['GDPR', 'NAME'] },
+    });
+  });
+
   it('get() GET /v2/pre-recorded/{id}', async () => {
     const http = createMockHttp();
     const expected = { id: 'job-123', status: 'done' };
