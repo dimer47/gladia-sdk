@@ -39,6 +39,10 @@ export type LiveLifecycleMessage =
   | S['EndSessionMessage'];
 export type LiveMessageError = S['Error'];
 
+/**
+ * @deprecated Gladia decommissioned chapterization; the API no longer sends `post_chapterization`.
+ * Use Audio to LLM instead.
+ */
 export interface LiveChapter {
   abstractive_summary?: string;
   extractive_summary?: string;
@@ -49,6 +53,10 @@ export interface LiveChapter {
   start?: number;
   end?: number;
 }
+/**
+ * @deprecated Gladia decommissioned chapterization; the API no longer sends `post_chapterization`.
+ * Use Audio to LLM instead.
+ */
 export interface LivePostChapterizationMessage {
   session_id: string;
   created_at: string;
@@ -92,6 +100,7 @@ export interface LiveEventMap {
   post_transcript: LivePostTranscriptMessage;
   post_final_transcript: LivePostFinalTranscriptMessage;
   post_summarization: LivePostSummarizationMessage;
+  /** @deprecated Gladia no longer sends this message. */
   post_chapterization: LivePostChapterizationMessage;
   audio_chunk: S['AudioChunkAckMessage'];
   stop_recording: S['StopRecordingAckMessage'];

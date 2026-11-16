@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { isDeepStrictEqual } from 'node:util';
-import { execFileSync } from 'node:child_process';
+import { generateOpenApiTypes } from './generate-openapi.mjs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -48,11 +48,7 @@ for (const source of sources) {
 if (drifted) process.exitCode = 1;
 else {
   const generated = join(tmpdir(), `gladia-openapi-${process.pid}.ts`);
-  execFileSync(
-    new URL('../node_modules/.bin/openapi-typescript', import.meta.url).pathname,
-    ['docs/openapi.json', '-o', generated, '--default-non-nullable', 'false'],
-    { stdio: 'ignore' },
-  );
+  await generateOpenApiTypes(generated);
   const [committedTypes, generatedTypes] = await Promise.all([
     readFile(new URL('../src/generated/openapi.ts', import.meta.url), 'utf8'),
     readFile(generated, 'utf8'),
