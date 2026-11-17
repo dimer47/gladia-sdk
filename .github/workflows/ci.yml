@@ -42,7 +42,11 @@ jobs:
       - run: npm run check:version
       - run: npm run lint
       - run: npm run format:check
-      # Non-blocking: reports advisories without failing the build. The only current
-      # advisory (picomatch ReDoS, GHSA-fc5q-39xc-vjpf) affects dev tooling only, has no
-      # fixed version yet, and never reaches the published SDK (zero runtime dependencies).
-      - run: npm audit --audit-level=moderate || true
+      # Always report every advisory, dev tooling included, without failing the build.
+      # Dev tooling never reaches users; it currently reports picomatch ReDoS
+      # (GHSA-fc5q-39xc-vjpf), which has no fixed version yet.
+      - name: npm audit (all dependencies, informational)
+        run: npm audit --audit-level=moderate || echo "::warning::npm audit reported advisories (see log). Dev-only advisories do not block."
+      # Block only on advisories in what users install (the published SDK's runtime dependencies).
+      - name: npm audit (runtime dependencies, blocking)
+        run: npm audit --omit=dev --audit-level=moderate

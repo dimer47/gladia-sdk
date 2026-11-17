@@ -36,8 +36,9 @@ jobs:
 
       # Refuse to publish if the tag does not match package.json's version.
       - name: Check tag matches package version
+        env:
+          REF: ${{ github.event.inputs.tag || github.ref_name }}
         run: |
-          REF="${{ github.event.inputs.tag || github.ref_name }}"
           TAG="${REF#v}"
           PKG="$(node -p "require('./package.json').version")"
           if [ "$TAG" != "$PKG" ]; then
